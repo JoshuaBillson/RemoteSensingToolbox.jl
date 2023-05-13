@@ -12,6 +12,8 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 Rasters = "0.6"
+DocStringExtensions = "0.9"
+Pipe = "1"
 julia = "1"
 
 [extras]
