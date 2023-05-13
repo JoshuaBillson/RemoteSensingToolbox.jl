@@ -7,10 +7,6 @@ function align_rasters(rasters::Vararg{Raster})
 end
 
 "Read a raster from disk into memory. Return immediately if raster has already been read."
-function efficient_read(r::Array)
-    return r
-end
-
 function efficient_read(r::Raster)
     return r.data isa Rasters.DiskArrays.AbstractDiskArray ? read(r) : r
 end

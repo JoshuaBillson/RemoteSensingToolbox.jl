@@ -12,10 +12,15 @@ include("Sensors/Sensors.jl")
 
 using .Sensors
 
+include("Algorithms/Algorithms.jl")
+
+using .Algorithms
+
 include("visualization.jl")
 
 
-export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2
+export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2, dn_to_reflectance
 export visualize, TrueColor, ColorInfrared, SWIR, Agriculture, Geology
+export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 end

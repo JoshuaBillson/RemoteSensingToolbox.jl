@@ -1,5 +1,10 @@
+"""
+$TYPEDFIELDS
+
+Implements the `AbstractSensor` interface for Landsat 7.
+"""
 struct Landsat7 <: AbstractSensor
-    bands::Dict{Symbol,Raster}
+    stack::RasterStack
 end
     
 function Landsat7(dir::String; ext="TIF", lazy=true)
@@ -14,15 +19,7 @@ function Landsat7(dir::String; ext="TIF", lazy=true)
     bands = map(x->split(x, "_")[end][1:2], files) .|> Symbol
 
     # Construct Landsat7
-    @pipe Raster.(files; lazy=lazy) |>
-    zip(bands, _) |> 
-    Dict |> 
-    Landsat7
-end
-
-function Base.getindex(X::Landsat7, i::Symbol)
-    @assert i in keys(X.bands) "Band $i Not Found!"
-    return X.bands[i]
+    return Landsat7(RasterStack(files; name=bands))
 end
 
 blue(X::Landsat7) = X[:B1]
@@ -36,3 +33,5 @@ nir(X::Landsat7) = X[:B4]
 swir1(X::Landsat7) = X[:B5]
 
 swir2(X::Landsat7) = X[:B7]
+
+dn_to_reflectance(X::Landsat7) = map(x -> mask((x .* 0.0000275f0) .- 0.2f0; with=x, missingval=Float32(missingval(x))), X)

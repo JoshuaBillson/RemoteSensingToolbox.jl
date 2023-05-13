@@ -4,7 +4,7 @@ using Documenter
 DocMeta.setdocmeta!(RSToolbox, :DocTestSetup, :(using RSToolbox); recursive=true)
 
 makedocs(;
-    modules=[RSToolbox],
+    modules=[RSToolbox, RSToolbox.Sensors, RSToolbox.Algorithms],
     authors="Joshua Billson",
     repo="https://github.com/JoshuaBillson/RSToolbox.jl/blob/{commit}{path}#{line}",
     sitename="RSToolbox.jl",
