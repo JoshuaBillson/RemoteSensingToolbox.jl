@@ -97,55 +97,49 @@ Transform the raster from Digital Numbers (DN) to reflectance.
 """
 dn_to_reflectance(X::AbstractSensor) = error("Error: 'dn_to_reflectance' not defined for $(typeof(X))!")
 
-function Base.getindex(X::AbstractSensor, i::Symbol)
-    @assert i in keys(X.stack) "Band $i Not Found!"
-    return X.stack[i]
-end
+"""
+    asraster(f, X::AbstractSensor)
 
-function Base.length(X::AbstractSensor)
-    return X.stack |> keys |> length
+Operate on the AbstractSensor as if it was a regular `Rasters.RasterStack`.
+    
+# Example
+```julia
+landsat = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1/")
+asraster(landsat) do stack
+    map(x -> x .* 0.0001f0, stack)
 end
+```
+"""
+asraster(f, X::T) where {T <: AbstractSensor} = T(f(X.stack))
 
-function Base.map(f, c::T) where {T <: AbstractSensor}
-    return T(map(f, c.stack))
-end
+Base.getindex(X::AbstractSensor, i::Symbol) = X.stack[i]
 
-function Base.show(io::IO, x::AbstractSensor)
-    Base.show(io, x.stack)
-end
+Base.length(X::AbstractSensor) = X.stack |> keys |> length
 
-function Base.show(io::IO, d::MIME"text/plain", x::AbstractSensor)
-    Base.show(io, d, x.stack)
-end
+Base.map(f, c::T) where {T <: AbstractSensor} = T(map(f, c.stack))
 
-function Rasters.resample(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.resample(x.stack; kwargs...))
-end
+Base.show(io::IO, x::AbstractSensor) = Base.show(io, x.stack)
 
-function Rasters.crop(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.crop(x.stack; kwargs...))
-end
+Base.show(io::IO, d::MIME"text/plain", x::AbstractSensor) = Base.show(io, d, x.stack)
 
-function Rasters.extend(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.extend(x.stack; kwargs...))
-end
+Rasters.resample(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.resample(x.stack; kwargs...))
 
-function Rasters.trim(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.trim(x.stack; kwargs...))
-end
+Rasters.crop(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.crop(x.stack; kwargs...))
 
-function Rasters.mask(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.mask(x.stack; kwargs...))
-end
+Rasters.extend(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.extend(x.stack; kwargs...))
 
-function Rasters.replace_missing(x::T; kwargs...) where {T <: AbstractSensor}
-    T(Rasters.replace_missing(x.stack; kwargs...))
-end
+Rasters.trim(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.trim(x.stack; kwargs...))
+
+Rasters.mask(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.mask(x.stack; kwargs...))
+
+Rasters.replace_missing(x::T; kwargs...) where {T <: AbstractSensor} = T(Rasters.replace_missing(x.stack; kwargs...))
+
+Base.write(filename::AbstractString, s::AbstractSensor; kwargs...) = Base.write(s.stack; kwargs...)
 
 include("landsat8.jl")
 include("landsat7.jl")
 include("sentinel2a.jl")
 
-export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2, dn_to_reflectance
+export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2, dn_to_reflectance, asraster
 
 end

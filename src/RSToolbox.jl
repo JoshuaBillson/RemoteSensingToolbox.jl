@@ -19,7 +19,7 @@ using .Algorithms
 include("visualization.jl")
 
 
-export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2, dn_to_reflectance
+export AbstractSensor, Landsat8, Landsat7, Sentinel2A, red, green, blue, nir, swir1, swir2, dn_to_reflectance, asraster
 export visualize, TrueColor, ColorInfrared, SWIR, Agriculture, Geology
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
