@@ -43,3 +43,11 @@ end
 function extract_raster_data(raster::Raster)
     return raster.data
 end
+
+function create_patches(raster, patchsize::Tuple{Int,Int}, stride::Tuple{Int,Int})
+    sizex, sizey = patchsize
+    stridex, stridey = stride
+    xlim = size(raster,1)
+    ylim = size(raster,2)
+    [@view raster[X(x:x+sizex-1), Y(y:y+sizey-1)] for x in 1:stridex:xlim-stridex+1 for y in 1:stridey:ylim-stridey+1]
+end

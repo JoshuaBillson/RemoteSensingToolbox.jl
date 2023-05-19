@@ -8,10 +8,33 @@ struct Sentinel2A <: AbstractSensor
 end
 
 function Sentinel2A(dir::String; ext="jp2", missingval=0)
+    # Get Files
     files = [f for f in readdir(dir, join=true) if split(f, ".")[end] == ext]
+
+    # Get Bands
     bands = map(x->split(x, "_")[end][1:3], files) .|> Symbol
-    rasters = align_rasters(Raster.(files, missingval=missingval)...)
+
+    # Move :B8A To Correct Position
+    first = [(band, file) for (band, file) in zip(bands, files) if !(band in (:B8A, :B09, :B10, :B11, :B12))]
+    middle = [(band, file) for (band, file) in zip(bands, files) if band == :B8A]
+    last = [(band, file) for (band, file) in zip(bands, files) if !(band in (:B01, :B02, :B03, :B04, :B05, :B06, :B07, :B08, :B8A))]
+    files = [file for (_, file) in vcat(first, middle, last)]
+    bands = [band for (band, _) in vcat(first, middle, last)]
+
+    # Resize Rasters To Common Resolution
+    rasters = @pipe align_rasters(Raster.(files)...)
+
+    # Add Missing Value
+    rasters = Tuple(rebuild(x, missingval=eltype(x)(missingval)) for x in rasters)
+
+    # Return
     return Sentinel2A(RasterStack(rasters; name=bands))
+end
+
+function BandSet(::Type{Sentinel2A})
+    bands = [:B01, :B02, :B03, :B04, :B05, :B06, :B07, :B08, :B8A, :B09, :B10, :B11, :B12]
+    wavelengths = [443, 490, 560, 665, 705, 740, 783, 842, 865, 945, 1375, 1610, 2190]
+    return BandSet(bands, wavelengths)
 end
 
 blue(X::Sentinel2A) = X[:B02]
@@ -26,4 +49,4 @@ swir1(X::Sentinel2A) = X[:B11]
 
 swir2(X::Sentinel2A) = X[:B12]
 
-dn_to_reflectance(X::Sentinel2A) = map(x -> mask(x .* 0.0001f0; with=x, missingval=Float32(missingval(x))), X)
+dn2rs(::Type{Sentinel2A}) = (scale=0.0001, offset=0.0)

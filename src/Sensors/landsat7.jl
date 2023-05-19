@@ -22,6 +22,12 @@ function Landsat7(dir::String; ext="TIF", lazy=true)
     return Landsat7(RasterStack(files; name=bands))
 end
 
+function BandSet(::Type{Landsat7})
+    bands = [:B1, :B2, :B3, :B4, :B5, :B7]
+    wavelengths = [483, 560, 660, 835, 1650, 2220]
+    return BandSet(bands, wavelengths)
+end
+
 blue(X::Landsat7) = X[:B1]
 
 green(X::Landsat7) = X[:B2]
@@ -34,4 +40,4 @@ swir1(X::Landsat7) = X[:B5]
 
 swir2(X::Landsat7) = X[:B7]
 
-dn_to_reflectance(X::Landsat7) = map(x -> mask((x .* 0.0000275f0) .- 0.2f0; with=x, missingval=Float32(missingval(x))), X)
+dn2rs(::Type{Landsat7}) = (scale=0.0000275, offset=-0.2)
