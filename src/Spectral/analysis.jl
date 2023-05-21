@@ -57,7 +57,7 @@ function extract_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
 end
 
 """
-    plot_signatures(rs::AbstractSensor, shp::DataFrame, dst::String, label=:label)
+    plot_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol, dst::String)
     plot_signatures(rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol, dst::String)
 
 Plot spectral signatures for each land cover type specified in a given shapefile.
