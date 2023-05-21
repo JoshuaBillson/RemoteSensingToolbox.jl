@@ -26,6 +26,6 @@ include("visualization.jl")
 export AbstractSensor, Landsat8, Landsat7, Sentinel2A, DESIS, BandSet, red, green, blue, nir, swir1, swir2, dn_to_reflectance, dn2rs, asraster
 export visualize, TrueColor, ColorInfrared, SWIR, Agriculture, Geology
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
-export extract_signatures, plot_signatures, summarize_signatures
+export extract_signatures, plot_signatures
 
 end

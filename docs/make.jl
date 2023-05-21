@@ -4,7 +4,7 @@ using Documenter
 DocMeta.setdocmeta!(RSToolbox, :DocTestSetup, :(using RSToolbox); recursive=true)
 
 makedocs(;
-    modules=[RSToolbox, RSToolbox.Sensors, RSToolbox.Algorithms],
+    modules=[RSToolbox, RSToolbox.Sensors, RSToolbox.Algorithms, RSToolbox.Spectral],
     authors="Joshua Billson",
     repo="https://github.com/JoshuaBillson/RSToolbox.jl/blob/{commit}{path}#{line}",
     sitename="RSToolbox.jl",
@@ -16,6 +16,10 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Examples" => [
+            "Visualization" => "visualization_example.md", 
+            "Spectral Analysis" => "spectral_example.md", 
+        ], 
     ],
 )
 

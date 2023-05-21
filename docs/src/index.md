@@ -6,12 +6,8 @@ CurrentModule = RSToolbox
 
 Documentation for [RSToolbox](https://github.com/JoshuaBillson/RSToolbox.jl).
 
-# Index
-
-```@index
-```
-
 # Sensors
+
 Sensors are julia structs that wrap a typical `Rasters.RasterStack` object to provide compatability with many `RSToolbox` algorithms and methods.
 
 The following methods are supported by all `AbstractSensor` types:
@@ -31,40 +27,26 @@ The following methods are supported by all `AbstractSensor` types:
 
 Additionally, [`asraster`](@ref) can be used to apply a function to the enclosed `Rasters.RasterStack`.
 
-```@docs
-RSToolbox.AbstractSensor
-Landsat8
-Landsat7
-Sentinel2A
-red
-green
-blue
-nir
-swir1
-swir2
-dn_to_reflectance
-asraster
+```@autodocs
+Modules = [RSToolbox.Sensors]
 ```
 
 # Visualization
 
-```@docs
-visualize
-TrueColor
-ColorInfrared
-SWIR
-Agriculture
-Geology
+```@autodocs
+Modules = [RSToolbox]
+Pages = ["visualization.jl"]
 ```
 
 # Land Cover Indices
 
-```@docs
-mndwi
-ndwi
-ndvi
-savi
-ndmi
-nbri
-ndbi
+```@autodocs
+Modules = [RSToolbox.Algorithms]
+Pages = ["Algorithms/indices.jl"]
+```
+
+# Spectral Analysis
+
+```@autodocs
+Modules = [RSToolbox.Spectral]
 ```

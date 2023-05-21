@@ -13,6 +13,6 @@ import ..Sensors: AbstractSensor, BandSet, Landsat8
 
 include("analysis.jl")
 
-export extract_signatures, plot_signatures, summarize_signatures
+export extract_signatures, plot_signatures
 
 end
