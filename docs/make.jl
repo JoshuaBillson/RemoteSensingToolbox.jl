@@ -1,16 +1,18 @@
-using RSToolbox
+push!(LOAD_PATH,"../src/")
+
+using RemoteSensingToolbox
 using Documenter
 
-DocMeta.setdocmeta!(RSToolbox, :DocTestSetup, :(using RSToolbox); recursive=true)
+DocMeta.setdocmeta!(RemoteSensingToolbox, :DocTestSetup, :(using RemoteSensingToolbox); recursive=true)
 
 makedocs(;
-    modules=[RSToolbox, RSToolbox.Sensors, RSToolbox.Algorithms, RSToolbox.Spectral],
+    modules=[RemoteSensingToolbox, RemoteSensingToolbox.Sensors, RemoteSensingToolbox.Algorithms, RemoteSensingToolbox.Spectral],
     authors="Joshua Billson",
-    repo="https://github.com/JoshuaBillson/RSToolbox.jl/blob/{commit}{path}#{line}",
-    sitename="RSToolbox.jl",
+    repo="https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/{commit}{path}#{line}",
+    sitename="RemoteSensingToolbox.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://JoshuaBillson.github.io/RSToolbox.jl",
+        canonical="https://JoshuaBillson.github.io/RemoteSensingToolbox.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -24,6 +26,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/JoshuaBillson/RSToolbox.jl",
+    repo="github.com/JoshuaBillson/RemoteSensingToolbox.jl",
     devbranch="main",
 )

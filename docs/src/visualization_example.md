@@ -1,13 +1,13 @@
 ```@meta
-CurrentModule = RSToolbox
+CurrentModule = RemoteSensingToolbox
 ```
 
 # Visualization Example
 
-`RSToolbox` provides a number of utilities for visualizing remote sensing imagery. First, lets load the imagery we want to visualize. We're working with Landsat 8 imagery, so we'll use the `Landsat8` constructor to wrap our rasters in the appropriate context. `Landsat8` is an instance of `AbstractSensor`, which allow many methods within `RSToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system. The `Landsat8` constructor expects a directory storing Landsat 8 raster files with names conforming to the standard specification. If this is not the case, you may construct a `Rasters.RasterStack` manually and pass it to the constructor instead.
+`RemoteSensingToolbox` provides a number of utilities for visualizing remote sensing imagery. First, lets load the imagery we want to visualize. We're working with Landsat 8 imagery, so we'll use the `Landsat8` constructor to wrap our rasters in the appropriate context. `Landsat8` is an instance of `AbstractSensor`, which allow many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system. The `Landsat8` constructor expects a directory storing Landsat 8 raster files with names conforming to the standard specification. If this is not the case, you may construct a `Rasters.RasterStack` manually and pass it to the constructor instead.
 
 ```julia
-using RSToolbox, Images, Rasters
+using RemoteSensingToolbox, Images, Rasters
 
 landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/")
 ```

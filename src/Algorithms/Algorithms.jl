@@ -4,7 +4,7 @@ using Rasters
 using DocStringExtensions
 using Pipe: @pipe
 
-import RSToolbox: align_rasters, efficient_read
+import RemoteSensingToolbox: align_rasters, efficient_read
 import ..Sensors: AbstractSensor, blue, green, red, nir, swir1, swir2
 
 include("indices.jl")

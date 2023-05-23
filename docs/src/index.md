@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = RSToolbox
+CurrentModule = RemoteSensingToolbox
 ```
 
-# RSToolbox
+# RemoteSensingToolbox
 
-Documentation for [RSToolbox](https://github.com/JoshuaBillson/RSToolbox.jl).
+Documentation for [RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl).
 
 # Sensors
 
-Sensors are julia structs that wrap a typical `Rasters.RasterStack` object to provide compatability with many `RSToolbox` algorithms and methods.
+Sensors are julia structs that wrap a typical `Rasters.RasterStack` object to provide compatability with many `RemoteSensingToolbox` algorithms and methods.
 
 The following methods are supported by all `AbstractSensor` types:
 
@@ -28,25 +28,25 @@ The following methods are supported by all `AbstractSensor` types:
 Additionally, [`asraster`](@ref) can be used to apply a function to the enclosed `Rasters.RasterStack`.
 
 ```@autodocs
-Modules = [RSToolbox.Sensors]
+Modules = [RemoteSensingToolbox.Sensors]
 ```
 
 # Visualization
 
 ```@autodocs
-Modules = [RSToolbox]
+Modules = [RemoteSensingToolbox]
 Pages = ["visualization.jl"]
 ```
 
 # Land Cover Indices
 
 ```@autodocs
-Modules = [RSToolbox.Algorithms]
+Modules = [RemoteSensingToolbox.Algorithms]
 Pages = ["Algorithms/indices.jl"]
 ```
 
 # Spectral Analysis
 
 ```@autodocs
-Modules = [RSToolbox.Spectral]
+Modules = [RemoteSensingToolbox.Spectral]
 ```

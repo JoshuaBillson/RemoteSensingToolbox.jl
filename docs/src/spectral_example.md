@@ -1,15 +1,15 @@
 ```@meta
-CurrentModule = RSToolbox
+CurrentModule = RemoteSensingToolbox
 ```
 
 # Spectral Analysis Example
 
-A common application of remotely sensed imagery is land cover classification. One method to accomplish this is to analyze the spectral signatures produced by different types of cover. `RSToolbox` provides a number of functions for extracting and visualyzing spectral signatures organized by their associated lan cover.
+A common application of remotely sensed imagery is land cover classification. One method to accomplish this is to analyze the spectral signatures produced by different types of cover. `RemoteSensingToolbox` provides a number of functions for extracting and visualyzing spectral signatures organized by their associated lan cover.
 
 The first step in our analysis is to load our remotely sensed data and convert the DNs (Digital Numbers) to reflectances. Reflectance is a standardized unit of measurement defined over the interval [0, 1] which denotes the fraction of light that is reflected by the observed surface. A reflectance of 0.0 indicates that no light was reflected whereas a reflectance of 1.0 indicates that 100% of light was reflected.
 
 ```julia
-using RSToolbox, DataFrames, Shapefile
+using RemoteSensingToolbox, DataFrames, Shapefile
 
 landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance
 ```

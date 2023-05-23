@@ -5,7 +5,7 @@ using DocStringExtensions
 using Pipe: @pipe
 
 import Statistics
-import RSToolbox: align_rasters, efficient_read
+import RemoteSensingToolbox: align_rasters, efficient_read
 
 """
 The supertype of all sensor types. 

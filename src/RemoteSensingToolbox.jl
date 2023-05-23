@@ -1,4 +1,4 @@
-module RSToolbox
+module RemoteSensingToolbox
 
 import Images
 using Rasters

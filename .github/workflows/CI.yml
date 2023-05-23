@@ -56,6 +56,6 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using RSToolbox
-            DocMeta.setdocmeta!(RSToolbox, :DocTestSetup, :(using RSToolbox); recursive=true)
-            doctest(RSToolbox)'
+            using RemoteSensingToolbox
+            DocMeta.setdocmeta!(RemoteSensingToolbox, :DocTestSetup, :(using RemoteSensingToolbox); recursive=true)
+            doctest(RemoteSensingToolbox)'

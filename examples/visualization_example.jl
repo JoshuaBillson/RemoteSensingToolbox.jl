@@ -1,4 +1,4 @@
-using RSToolbox, Images, CairoMakie, Rasters
+using RemoteSensingToolbox, Images, CairoMakie, Rasters
 using Pipe: @pipe
 
 function main()
