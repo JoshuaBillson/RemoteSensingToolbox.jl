@@ -1,6 +1,6 @@
-using RSToolbox
+using RemoteSensingToolbox
 using Test
 
-@testset "RSToolbox.jl" begin
+@testset "RemoteSensingToolbox.jl" begin
     # Write your tests here.
 end
