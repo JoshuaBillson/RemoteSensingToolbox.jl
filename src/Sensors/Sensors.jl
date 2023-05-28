@@ -144,24 +144,6 @@ julia> dn2rs(Landsat8)
 dn2rs(::Type{T}) where {T <: AbstractSensor} = error("Error: 'dn2rs' not defined for $T!")
 
 """
-    dn_to_reflectance(X::AbstractSensor)
-
-Transform the raster from Digital Numbers (DN) to reflectance.
-"""
-function dn_to_reflectance(X::T) where {T <: AbstractSensor}
-    scale, offset = dn2rs(T)
-    T(dn_to_reflectance(X.stack, scale, offset))
-end
-
-function dn_to_reflectance(X::AbstractRasterStack, scale, offset)
-    dn_to_reflectance(X, Float32(scale), Float32(offset))
-end
-
-function dn_to_reflectance(X::AbstractRasterStack, scale::Float32, offset::Float32)
-    map(x -> mask((x .* scale) .+ offset; with=x, missingval=Float32(missingval(x))), X)
-end
-
-"""
     asraster(f, X::AbstractSensor)
 
 Operate on the AbstractSensor as if it was a regular `Rasters.RasterStack`.
@@ -230,6 +212,6 @@ include("sentinel2a.jl")
 include("DESIS.jl")
 
 export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2A, DESIS
-export red, green, blue, nir, swir1, swir2, dn2rs, dn_to_reflectance, asraster
+export red, green, blue, nir, swir1, swir2, dn2rs, asraster
 
 end

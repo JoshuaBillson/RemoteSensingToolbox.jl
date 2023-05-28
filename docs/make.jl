@@ -6,7 +6,7 @@ using Documenter
 DocMeta.setdocmeta!(RemoteSensingToolbox, :DocTestSetup, :(using RemoteSensingToolbox); recursive=true)
 
 makedocs(;
-    modules=[RemoteSensingToolbox, RemoteSensingToolbox.Sensors, RemoteSensingToolbox.Algorithms, RemoteSensingToolbox.Spectral],
+    modules=[RemoteSensingToolbox, RemoteSensingToolbox.Sensors, RemoteSensingToolbox.Algorithms, RemoteSensingToolbox.Spectral, RemoteSensingToolbox.Preprocessing],
     authors="Joshua Billson",
     repo="https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/{commit}{path}#{line}",
     sitename="RemoteSensingToolbox.jl",
@@ -20,6 +20,7 @@ makedocs(;
         "Home" => "index.md",
         "Examples" => [
             "Visualization" => "visualization_example.md", 
+            "Preprocessing" => "preprocessing_example.md", 
             "Spectral Analysis" => "spectral_example.md", 
         ], 
     ],

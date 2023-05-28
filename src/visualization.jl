@@ -86,3 +86,16 @@ function Images.mosaicview(sensor::AbstractSensor; lower=0.02, upper=0.98, ratio
     imgs = [Images.imresize(visualize(sensor.stack[layer]; lower=lower, upper=upper); ratio=ratio) for layer in layers]
     return Images.mosaicview(imgs...; kwargs...)
 end
+
+function plot_mask(mask, classes)
+    # Create Plot
+    fig, ax, plt = CairoMakie.plot(mask)
+    CairoMakie.hidedecorations!(ax)
+
+    # Create Legend
+    colors = CairoMakie.cgrad(:viridis, length(classes), categorical=true)
+    elements = [CairoMakie.PolyElement(color=color, strokecolor=:transparent) for color in colors]
+    CairoMakie.Legend(fig[1,2], elements, classes, "Legend")
+
+    return fig
+end

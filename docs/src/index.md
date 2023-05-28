@@ -4,7 +4,7 @@ CurrentModule = RemoteSensingToolbox
 
 # RemoteSensingToolbox
 
-Documentation for [RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl).
+[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package intended to provide a collection of commonly used tools for working with remotely sensed imagery.
 
 # Sensors
 
@@ -36,6 +36,12 @@ Modules = [RemoteSensingToolbox.Sensors]
 ```@autodocs
 Modules = [RemoteSensingToolbox]
 Pages = ["visualization.jl"]
+```
+
+# Preprocessing
+
+```@autodocs
+Modules = [RemoteSensingToolbox.Preprocessing]
 ```
 
 # Land Cover Indices
