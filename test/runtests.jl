@@ -14,9 +14,10 @@ using Pipe: @pipe
 
     # Test Indices
     for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi]
-        result = mndwi(landsat)
+        result = index(landsat)
         @test result isa AbstractArray{Float32}
         @test maximum(result) <= 1.0f0
         @test minimum(result) >= -1.0f0
+        @test visualize(result) isa AbstractArray{Gray{N0f8}}
     end
 end
