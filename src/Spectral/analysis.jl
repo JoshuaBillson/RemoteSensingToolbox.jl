@@ -1,6 +1,6 @@
 """
-    extract_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
-    extract_signatures(rs::RasterStack, shp::DataFrame, label::Symbol)
+    labelled_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
+    labelled_signatures(rs::RasterStack, shp::DataFrame, label::Symbol)
 
 Extract signatures from the given `RasterStack` or `AbstractSensor` within regions specified by a given shapefile.
 
@@ -18,41 +18,49 @@ julia> landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> d
 
 julia> shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame;
 
-julia> extract_signatures(landsat, shp, :cover)
-3195×8 DataFrame
-  Row │ B1          B2         B3         B4         B5        B6         B7         label      
-      │ Float64     Float64    Float64    Float64    Float64   Float64    Float64    String     
-──────┼─────────────────────────────────────────────────────────────────────────────────────────
-    1 │  0.05102    0.0891075  0.156317   0.198558   0.482055  0.267197   0.139103   hail scar
-    2 │  0.054815   0.09238    0.16333    0.207742   0.481203  0.270415   0.140973   hail scar
-    3 │  0.0561625  0.0942225  0.16564    0.208787   0.477875  0.273082   0.14353    hail scar
-    4 │  0.057015   0.0941125  0.16146    0.20425    0.47991   0.271267   0.141715   hail scar
-    5 │  0.044695   0.0839375  0.152852   0.193525   0.465198  0.258012   0.133217   hail scar
-  ⋮   │     ⋮           ⋮          ⋮          ⋮         ⋮          ⋮          ⋮          ⋮
- 3192 │ -0.0024675  0.011475   0.0757425  0.0416975  0.540658  0.0856975  0.035785   vegetation
- 3193 │ -0.001945   0.0115575  0.0766225  0.0419725  0.535488  0.08567    0.036005   vegetation
- 3194 │ -0.0023025  0.012135   0.0773925  0.0427975  0.523745  0.08556    0.0364175  vegetation
- 3195 │ -0.0019725  0.0119425  0.0767875  0.04211    0.523745  0.085065   0.0360325  vegetation
-                                                                               3186 rows omitted
+julia> labelled_signatures(landsat, shp, :cover)
+2860×8 DataFrame
+  Row │ B1         B2         B3         B4         B5        B6        B7        label      
+      │ Float32    Float32    Float32    Float32    Float32   Float32   Float32   String     
+──────┼──────────────────────────────────────────────────────────────────────────────────────
+    1 │ 0.0514875  0.073845   0.119742   0.128817   0.2466    0.256005  0.221905  Built Up
+    2 │ 0.0759625  0.10228    0.152963   0.170865   0.27575   0.300115  0.26387   Built Up
+    3 │ 0.113747   0.134263   0.212747   0.237497   0.32756   0.32041   0.28851   Built Up
+    4 │ 0.09359    0.117955   0.18522    0.19743    0.302453  0.3148    0.277125  Built Up
+    5 │ 0.0793725  0.104507   0.133658   0.1377     0.311555  0.2873    0.23824   Built Up
+    6 │ 0.0641375  0.086      0.11724    0.115315   0.353272  0.291755  0.221878  Built Up
+    7 │ 0.240688   0.271735   0.254245   0.299648   0.376895  0.500067  0.460797  Built Up
+    8 │ 0.06554    0.0865225  0.14265    0.16245    0.272478  0.283697  0.238515  Built Up
+    9 │ 0.0979625  0.131732   0.190747   0.230402   0.312793  0.369112  0.327148  Built Up
+  ⋮   │     ⋮          ⋮          ⋮          ⋮         ⋮         ⋮         ⋮          ⋮
+ 2853 │ 0.0355925  0.0422475  0.0688675  0.0711225  0.24385   0.287245  0.180792  Bare Earth
+ 2854 │ 0.0494525  0.05674    0.0867975  0.09612    0.277703  0.311665  0.192728  Bare Earth
+ 2855 │ 0.0473075  0.053      0.0815725  0.0860825  0.264998  0.291672  0.183075  Bare Earth
+ 2856 │ 0.04673    0.05267    0.08039    0.083195   0.25716   0.285787  0.184175  Bare Earth
+ 2857 │ 0.0465925  0.05289    0.0809675  0.0854225  0.268627  0.299345  0.189565  Bare Earth
+ 2858 │ 0.0471975  0.052835   0.08094    0.0856975  0.266097  0.302783  0.189097  Bare Earth
+ 2859 │ 0.0453275  0.050745   0.075055   0.0795925  0.247095  0.293323  0.185962  Bare Earth
+ 2860 │ 0.036335   0.0434025  0.06884    0.070985   0.2422    0.282845  0.179995  Bare Earth
+                                                                            2843 rows omitted
 ```
 """
-function extract_signatures(rs::RasterStack, shp::DataFrame, label::Symbol)
+function labelled_signatures(rs::RasterStack, shp::DataFrame, label::Symbol)
     # Extract Signatures
     sigs = with_logger(NullLogger()) do
-        Tuple(_extract_signatures(rs, shp, row) for row in 1:nrow(shp))
+        [_extract_signatures(rs, shp, row) for row in 1:nrow(shp)]
     end
 
-    # Construct DataFrame
-    df = @pipe reduce(vcat, sigs) |> Float64.(_) |> DataFrame(_, names(rs) |> collect)
-    
+    # Create DataFrame
+    df = reduce(vcat, sigs)
+
     # Add Labels
-    labels = reduce(vcat, repeat([shp[i,label]], size(sigs[i], 1)) for i in 1:nrow(shp))
+    labels = reduce(vcat, repeat([shp[i,label]], nrow(sigs[i])) for i in 1:nrow(shp))
     df.label = labels
     return df
 end
 
-function extract_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
-    return extract_signatures(rs.stack, shp, label)
+function labelled_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
+    return labelled_signatures(rs.stack, shp, label)
 end
 
 """
@@ -150,7 +158,7 @@ save("landsat_signatures.png", fig)
 """
 function plot_signatures!(ax::Axis, rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol; colors=wong_colors())
     # Extract Signatures
-    sigs = extract_signatures(rs, shp, label)
+    sigs = labelled_signatures(rs, shp, label)
 
     # Average Bands For Each Land Cover Type
     df = _summarize_signatures(mean, sigs, :label)

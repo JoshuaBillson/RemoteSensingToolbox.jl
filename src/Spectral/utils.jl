@@ -3,14 +3,19 @@ function _summarize_signatures(f, sigs::DataFrame, label::Symbol)
 end
 
 function _extract_signatures(stack, shp, row)
-    if length(names(stack)) > 25
+    # Large Stacks
+    if length(names(stack)) > 25 
+        # Partition Stack Layers Into Chunks of 25
         stacks = [RasterStack([stack[c] for c in part]...) for part in Iterators.partition(names(stack), 25)]
-        sigs = [_extract_signatures(stack, shp, row) for stack in stacks]
-        return reduce(hcat, sigs)
+
+        # Extract Signatures From Each Chunk
+        ops = [_extract_signatures(stack, shp, row) for stack in stacks]
+
+        # Merge Results
+        return reduce(hcat, ops)
+
+    # Small Stacks
     else
-        sigs = extract(stack, shp[row,:geometry]) |> collect
-        cols = names(stack) |> length
-        rows = length(sigs)
-        return [sigs[r][c] for r in 1:rows, c in 2:cols+1]
+        return @pipe extract(stack, shp[row,:geometry]) |> DataFrame |> _[:,Not(:geometry)]
     end
 end
