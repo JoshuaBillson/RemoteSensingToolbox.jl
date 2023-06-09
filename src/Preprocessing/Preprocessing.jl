@@ -6,6 +6,8 @@ using Pipe: @pipe
 
 import ..Sensors: AbstractSensor, dn2rs
 
+include("utils.jl")
+
 """
     tocube(rs::RasterStack; layers=names(rs))
     tocube(rs::AbstractSensor; layers=names(rs))
@@ -48,27 +50,33 @@ function tocube(rs::AbstractSensor; kwargs...)
 end
 
 """
-    dn_to_reflectance(X::AbstractSensor)
-    dn_to_reflectance(X::AbstractRasterStack, scale, offset)
+    dn_to_reflectance(rs::AbstractSensor; precision=Float32)
+    dn_to_reflectance(rs::AbstractRasterStack, scale, offset; precision=Float32)
 
 Transform the raster from Digital Numbers (DN) to reflectance.
 
 # Parameters
-- `X`: The `RasterStack` or `AbstractSensor` to be converted to reflectance.
+- `rs`: The `RasterStack` or `AbstractSensor` to be converted to reflectance.
 - `scale`: The scaling factor used to convert DN to reflectance. Inferred for `AbstractSensor` types.
 - `offset`: The offset used to convert DN to reflectance. Inferred for `AbstractSensor` types.
+- `precision`: The floating point representation of reflectance values. Uses 32 bits of precision by default.
 """
-function dn_to_reflectance(X::T) where {T <: AbstractSensor}
+function dn_to_reflectance(rs::T; precision=Float32) where {T <: AbstractSensor}
     scale, offset = dn2rs(T)
-    T(dn_to_reflectance(X.stack, scale, offset))
+    T(dn_to_reflectance(rs.stack, scale, offset; precision=precision))
 end
 
-function dn_to_reflectance(X::AbstractRasterStack, scale, offset)
-    dn_to_reflectance(X, Float32(scale), Float32(offset))
-end
+function dn_to_reflectance(rs::AbstractRasterStack, scale::AbstractFloat, offset::AbstractFloat; precision=Float32)
+    map(rs) do r
+        # Apply Scale And Offset
+        reflectance = precision.((r .* scale) .+ offset)
 
-function dn_to_reflectance(X::AbstractRasterStack, scale::Float32, offset::Float32)
-    map(x -> mask((x .* scale) .+ offset; with=x, missingval=Float32(missingval(x))), X)
+        # Clamp Reflectance
+        clamp!(reflectance, precision(0.001), precision(0.999))
+
+        # Mask Missing Pixels
+        mask(reflectance; with=r, missingval=precision(missingval(r)))
+    end
 end
 
 """
@@ -154,10 +162,6 @@ function landsat_qa(qa_src::String)
     # Return RasterStack
     names = (:dilated_cloud, :cirrus, :cloud, :cloud_shadow, :snow, :clear, :water)
     return RasterStack(rasters..., name=names)
-end
-
-function _read_bit(x, pos; bits=16)
-    return UInt8.((x .<< (bits - pos)) .>> 15)
 end
 
 export tocube, dn_to_reflectance, create_tiles, mask_pixels, landsat_qa
