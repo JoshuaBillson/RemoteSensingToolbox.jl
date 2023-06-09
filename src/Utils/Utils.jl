@@ -5,6 +5,8 @@ using DocStringExtensions
 using DataFrames
 using Pipe: @pipe
 
+include("skipmissing.jl")
+
 """
     stack2df(rs::RasterStack; dropmissingvals=true)
 
@@ -59,6 +61,6 @@ function stack2df(rs::RasterStack; dropmissingvals=true)
     end
 end
 
-export stack2df
+export stack2df, RasterStackIterator
 
 end
