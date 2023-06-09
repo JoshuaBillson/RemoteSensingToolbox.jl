@@ -20,6 +20,10 @@ end
 
 "Turn a raster into an image compatible with Images.jl."
 function raster_to_image(raster::Array{<:Number,3})
+    return raster_to_image(Images.N0f8.(raster))
+end
+
+function raster_to_image(raster::Array{Images.N0f8,3})
     if size(raster, 3) == 1
         return raster_to_image(raster[:,:,1])
     else
@@ -28,6 +32,10 @@ function raster_to_image(raster::Array{<:Number,3})
 end
 
 function raster_to_image(raster::Matrix{<:Number})
+    return raster_to_image(Images.N0f8.(raster))
+end
+
+function raster_to_image(raster::Matrix{Images.N0f8})
     @pipe permutedims(raster, (2, 1)) |> Images.colorview(Images.Gray, _)
 end
 
@@ -42,4 +50,8 @@ end
 
 function extract_raster_data(raster::Raster)
     return raster.data
+end
+
+function contains_bands(raster)
+    return @pipe dims(raster) |> isa.(_, Rasters.Band) |> any
 end

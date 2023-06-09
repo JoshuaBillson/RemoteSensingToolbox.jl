@@ -41,7 +41,7 @@ save("truecolor.png", img)
 ```
 """
 function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(r .* 1.0f0, g .* 1.0f0, b .* 1.0f0; lower=lower, upper=upper)
+    visualize(Float32.(r), Float32.(g), Float32.(b); lower=lower, upper=upper)
 end
     
 function visualize(r::AbstractRaster{Float32}, g::AbstractRaster{Float32}, b::AbstractRaster{Float32}; lower=0.02, upper=0.98)
@@ -51,14 +51,23 @@ function visualize(r::AbstractRaster{Float32}, g::AbstractRaster{Float32}, b::Ab
 end
 
 function visualize(g::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(g .* 1.0f0; lower=lower, upper=upper)
+    visualize(Float32.(g); lower=lower, upper=upper)
 end
     
 function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
-    @pipe efficient_read(g) |>
-    linear_stretch(_, lower, upper) |>
-    extract_raster_data |>
-    raster_to_image
+    # Read Raster Into Memory
+    raster = efficient_read(g)
+
+    # Perform Histogram Stretch
+    img = linear_stretch(raster, lower, upper)
+
+    # Mask Missing Values
+    if !isnothing(missingval(raster))
+        mask!(img; with=raster, missingval=0.0f0)
+    end
+
+    # Convert To Image
+    return raster_to_image(img)
 end
 
 function visualize(img::AbstractSensor, ::Type{TrueColor}; lower=0.02, upper=0.98)
