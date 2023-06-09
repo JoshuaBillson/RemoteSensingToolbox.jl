@@ -5,9 +5,12 @@ import CairoMakie
 using Rasters
 using Statistics
 using DocStringExtensions
+using StructArrays
 using Pipe: @pipe
 
 include("utils.jl")
+
+include("skipmissing.jl")
 
 include("Sensors/Sensors.jl")
 
