@@ -13,16 +13,16 @@ Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"
 Rasters = "a3a2b9e3-a471-40c9-b274-f788e487c689"
 Shapefile = "8e980c4a-a4fe-5da2-b3a7-4b4b0353a2f4"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
 
 [compat]
-DataFrames = "1"
 CairoMakie = "0.10"
+DataFrames = "1"
 DocStringExtensions = "0.9"
 Images = "0.25"
 Pipe = "1"
-Rasters = "0.6"
 Shapefile = "0.9"
-julia = "1"
+julia = "1.8"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
