@@ -100,9 +100,8 @@ Drop pixels from a raster according to a given mask. The mask and raster must ha
 - `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
 """
 function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
-    x = missingval(raster)
-    dropvalue = invert_mask ? 0 : 1
-    rebuild(ifelse.(mask .== dropvalue, x, raster), missingval=x)
+    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
+    return Rasters.mask(raster; with=rebuild(mask; missingval=missing_value))
 end
 
 function mask_pixels(raster::Union{<:AbstractRasterStack, <:AbstractSensor}, mask; kwargs...)
@@ -112,7 +111,7 @@ function mask_pixels(raster::Union{<:AbstractRasterStack, <:AbstractSensor}, mas
 end
 
 """
-    landsat_qa(qa::String)
+    landsat_qa(qa_src::String)
 
 Read and decode a landsat quality assurance (QA) raster. Decodes each bit into its own `RasterStack` layer.
 
@@ -122,8 +121,7 @@ julia> qa = landsat_qa("LC08_L2SP_043024_20200802_20200914_02_T1_QA_PIXEL.TIF")
 RasterStack with dimensions: 
   X Projected{Float64} LinRange{Float64}(493785.0, 728385.0, 7821) ForwardOrdered Regular Points crs: WellKnownText,
   Y Projected{Float64} LinRange{Float64}(5.84638e6, 5.60878e6, 7921) ReverseOrdered Regular Points crs: WellKnownText
-and 8 layers:
-  :fill          UInt8 dims: X, Y (7821×7921)
+and 7 layers:
   :dilated_cloud UInt8 dims: X, Y (7821×7921)
   :cirrus        UInt8 dims: X, Y (7821×7921)
   :cloud         UInt8 dims: X, Y (7821×7921)
@@ -133,18 +131,28 @@ and 8 layers:
   :water         UInt8 dims: X, Y (7821×7921)
 ```
 """
-function landsat_qa(qa::String)
-    qa = Raster(qa)[Rasters.Band(1)]
-    fill = _read_bit(qa, 1)
-    dilated_cloud = _read_bit(qa, 2)
-    cirrus = _read_bit(qa, 3)
-    cloud = _read_bit(qa, 4)
-    cloud_shadow = _read_bit(qa, 5)
-    snow = _read_bit(qa, 6)
-    clear = _read_bit(qa, 7)
-    water = _read_bit(qa, 8)
-    rasters = [fill, dilated_cloud, cirrus, cloud, cloud_shadow, snow, clear, water]
-    names = (:fill, :dilated_cloud, :cirrus, :cloud, :cloud_shadow, :snow, :clear, :water)
+function landsat_qa(qa_src::String)
+    # Read QA Raster
+    qa = Raster(qa_src)
+
+    # Read Bits
+    fill = @pipe _read_bit(qa, 1) |> rebuild(_; missingval=0x01)
+    dilated_cloud = @pipe _read_bit(qa, 2) |> rebuild(_; missingval=0xff)
+    cirrus = @pipe _read_bit(qa, 3) |> rebuild(_; missingval=0xff)
+    cloud = @pipe _read_bit(qa, 4) |> rebuild(_; missingval=0xff)
+    cloud_shadow = @pipe _read_bit(qa, 5) |> rebuild(_; missingval=0xff)
+    snow = @pipe _read_bit(qa, 6) |> rebuild(_; missingval=0xff)
+    clear = @pipe _read_bit(qa, 7) |> rebuild(_; missingval=0xff)
+    water = @pipe _read_bit(qa, 8) |> rebuild(_; missingval=0xff)
+
+    # Mask Missing Pixels
+    rasters = [dilated_cloud, cirrus, cloud, cloud_shadow, snow, clear, water]
+    for raster in rasters
+        mask!(raster; with=fill)
+    end
+    
+    # Return RasterStack
+    names = (:dilated_cloud, :cirrus, :cloud, :cloud_shadow, :snow, :clear, :water)
     return RasterStack(rasters..., name=names)
 end
 
