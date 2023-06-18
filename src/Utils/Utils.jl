@@ -5,6 +5,8 @@ using DocStringExtensions
 using DataFrames
 using Pipe: @pipe
 
+import RemoteSensingToolbox: contains_bands
+
 include("skipmissing.jl")
 
 """
@@ -59,6 +61,47 @@ function stack2df(rs::RasterStack; dropmissingvals=true)
     else
         return df[:,Not([:X,:Y])]
     end
+end
+
+function mapbands(f, raster::Raster)
+    @assert contains_bands(raster) "`mapbands` requires a raster with a `Band` dimension!"
+
+    newdata = mapslices(f, raster.data; dims=3)
+
+    # Get Metadata
+    band_dim = Rasters.Band(LookupArrays.Categorical(1:size(newdata,3), order=LookupArrays.ForwardOrdered()))
+    new_missingval = isnothing(missingval(raster)) ? missing : eltype(newdata)(missingval(raster))
+    new_dims = (dims(raster)[1], dims(raster)[2], band_dim)
+    new_crs = crs(raster)
+
+    # Construct New Raster
+    new_raster = Raster(newdata; dims=new_dims, crs=new_crs, missingval=new_missingval)
+
+    # Mask Missing Values
+    maskall!(new_raster, raster)
+
+    # Return Results
+    return new_raster
+end
+
+function maplayers(f, stack::RasterStack; missingvalue=missing)
+    # Map Over Layers
+    xmax = size(stack, X)
+    ymax = size(stack, Y)
+    data = [f(stack[Rasters.X(x), Rasters.Y(y)]) for x in 1:xmax, y in 1:ymax]
+
+    # Get Metadata
+    return Raster(data; dims=dims(stack), crs=crs(stack), missingval=missingvalue)
+end
+
+function maskall!(x, with::Raster; missingval=missingval(x))
+    @assert contains_bands(with) "`maskall!` requires a raster with a `Band` dimension!"
+
+    for b in size(with,3)
+        mask!(x; with=@view(with[Rasters.Band(b)]), missingval=missingval)
+    end
+
+    return x
 end
 
 export stack2df, RasterStackIterator

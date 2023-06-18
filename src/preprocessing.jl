@@ -1,13 +1,3 @@
-module Preprocessing
-
-using Rasters
-using DocStringExtensions
-using Pipe: @pipe
-
-import ..Sensors: AbstractSensor, dn2rs
-
-include("utils.jl")
-
 """
     tocube(rs::RasterStack; layers=names(rs))
     tocube(rs::AbstractSensor; layers=names(rs))
@@ -46,12 +36,12 @@ function tocube(rs::RasterStack; layers=names(rs))
 end
 
 function tocube(rs::AbstractSensor; kwargs...)
-    return tocube(rs.stack; kwargs...)
+    return unwrap(tocube, rs; kwargs...)
 end
 
 """
-    dn_to_reflectance(rs::AbstractSensor; precision=Float32)
-    dn_to_reflectance(rs::AbstractRasterStack, scale, offset; precision=Float32)
+    dn_to_reflectance(rs::AbstractSensor; kwargs...)
+    dn_to_reflectance(rs::AbstractRasterStack, scale, offset; clamp_values=false)
 
 Transform the raster from Digital Numbers (DN) to reflectance.
 
@@ -59,24 +49,31 @@ Transform the raster from Digital Numbers (DN) to reflectance.
 - `rs`: The `RasterStack` or `AbstractSensor` to be converted to reflectance.
 - `scale`: The scaling factor used to convert DN to reflectance. Inferred for `AbstractSensor` types.
 - `offset`: The offset used to convert DN to reflectance. Inferred for `AbstractSensor` types.
-- `precision`: The floating point representation of reflectance values. Uses 32 bits of precision by default.
+- `clamp_values`: Indicates whether to clamp reflectances into the range (0.0, 1.0].
 """
-function dn_to_reflectance(rs::T; precision=Float32) where {T <: AbstractSensor}
-    scale, offset = dn2rs(T)
-    T(dn_to_reflectance(rs.stack, scale, offset; precision=precision))
-end
-
-function dn_to_reflectance(rs::AbstractRasterStack, scale::AbstractFloat, offset::AbstractFloat; precision=Float32)
+function dn_to_reflectance(rs::AbstractRasterStack, scale::Float32, offset::Float32; clamp_values=false)
     map(rs) do r
         # Apply Scale And Offset
-        reflectance = precision.((r .* scale) .+ offset)
+        reflectance = (r .* scale) .+ offset
 
         # Clamp Reflectance
-        clamp!(reflectance, precision(0.001), precision(0.999))
+        clamp_values && clamp!(reflectance, eps(Float32), eltype(reflectance)(1.0))
 
         # Mask Missing Pixels
-        mask(reflectance; with=r, missingval=precision(missingval(r)))
+        mask!(reflectance; with=r, missingval=eltype(reflectance)(-Inf))
+
+        # Set Missing Value
+        rebuild(reflectance, missingval=eltype(reflectance)(-Inf))
     end
+end
+
+function dn_to_reflectance(rs::AbstractRasterStack, scale::AbstractFloat, offset::AbstractFloat; kwargs...)
+    dn_to_reflectance(rs, Float32(scale), Float32(offset); kwargs...)
+end
+
+function dn_to_reflectance(rs::T; kwargs...) where {T <: AbstractSensor}
+    scale, offset = dn2rs(T)
+    return asraster(dn_to_reflectance, rs, scale, offset; kwargs...)
 end
 
 """
@@ -162,8 +159,4 @@ function landsat_qa(qa_src::String)
     # Return RasterStack
     names = (:dilated_cloud, :cirrus, :cloud, :cloud_shadow, :snow, :clear, :water)
     return RasterStack(rasters..., name=names)
-end
-
-export tocube, dn_to_reflectance, create_tiles, mask_pixels, landsat_qa
-
 end

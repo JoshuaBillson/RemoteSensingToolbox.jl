@@ -41,14 +41,15 @@ Pages = ["visualization.jl"]
 # Preprocessing
 
 ```@autodocs
-Modules = [RemoteSensingToolbox.Preprocessing]
+Modules = [RemoteSensingToolbox]
+Pages = ["preprocessing.jl"]
 ```
 
 # Land Cover Indices
 
 ```@autodocs
-Modules = [RemoteSensingToolbox.Algorithms]
-Pages = ["Algorithms/indices.jl"]
+Modules = [RemoteSensingToolbox]
+Pages = ["indices.jl"]
 ```
 
 # Spectral Analysis

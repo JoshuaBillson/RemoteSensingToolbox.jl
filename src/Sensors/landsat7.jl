@@ -3,8 +3,8 @@ $TYPEDFIELDS
 
 Implements the `AbstractSensor` interface for Landsat 7.
 """
-struct Landsat7 <: AbstractSensor
-    stack::RasterStack
+struct Landsat7{T<:AbstractRasterStack} <: AbstractSensor{T}
+    stack::T
 end
     
 function Landsat7(dir::String; ext="TIF", lazy=true)
@@ -22,11 +22,7 @@ function Landsat7(dir::String; ext="TIF", lazy=true)
     return Landsat7(RasterStack(files; name=bands))
 end
 
-function BandSet(::Type{Landsat7})
-    bands = [:B1, :B2, :B3, :B4, :B5, :B7]
-    wavelengths = [483, 560, 660, 835, 1650, 2220]
-    return BandSet(bands, wavelengths)
-end
+unwrap(X::Landsat7) = X.stack
 
 blue(X::Landsat7) = X[:B1]
 
@@ -40,4 +36,10 @@ swir1(X::Landsat7) = X[:B5]
 
 swir2(X::Landsat7) = X[:B7]
 
-dn2rs(::Type{Landsat7}) = (scale=0.0000275, offset=-0.2)
+dn2rs(::Type{<:Landsat7}) = (scale=0.0000275, offset=-0.2)
+
+function bandset(::Type{<:Landsat7})
+    bands = [:B1, :B2, :B3, :B4, :B5, :B7]
+    wavelengths = [483, 560, 660, 835, 1650, 2220]
+    return BandSet(bands, wavelengths)
+end

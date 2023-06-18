@@ -55,3 +55,20 @@ end
 function contains_bands(raster)
     return @pipe dims(raster) |> isa.(_, Rasters.Band) |> any
 end
+
+function _read_bit(x, pos; bits=16)
+    return UInt8.((x .<< (bits - pos)) .>> 15)
+end
+
+function _copy_dims(data::AbstractArray{<:Number,3}, reference::AbstractRaster)
+    band_dim = Rasters.Band(LookupArrays.Categorical(1:size(data, 3), order=LookupArrays.ForwardOrdered()))
+    ref_dims = (dims(reference, :X), dims(reference, :Y), band_dim)
+    return Raster(data; crs=crs(reference), dims=ref_dims)
+end
+
+function _copy_dims(data::AbstractArray{<:Number,2}, reference::AbstractRaster)
+    ref_dims = (dims(reference, :X), dims(reference, :Y))
+    return Raster(data; crs=crs(reference), dims=ref_dims)
+end
+
+_second(x) = x[2]

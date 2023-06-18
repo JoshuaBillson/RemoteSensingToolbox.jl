@@ -13,11 +13,11 @@ using Pipe: @pipe
     end
 
     # Test DN to Reflectance
-    @test @pipe landsat |> dn_to_reflectance |> skipmissing(_.stack) |> minimum |> all([x >= 0.001f0 for x in _])
-    @test @pipe landsat |> dn_to_reflectance |> skipmissing(_.stack) |> maximum |> all([x <= 0.999f0 for x in _])
+    @test @pipe landsat |> dn_to_reflectance(_; clamp_values=true) |> skipmissing(_.stack) |> minimum |> all([x >= eps(Float32) for x in _])
+    @test @pipe landsat |> dn_to_reflectance(_; clamp_values=true) |> skipmissing(_.stack) |> maximum |> all([x <= 1.0f0 for x in _])
 
     # Test Indices
-    landsat_sr = landsat |> dn_to_reflectance
+    landsat_sr =  dn_to_reflectance(landsat; clamp_values=true)
     for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
         result = index(landsat_sr)
         @test result isa AbstractArray{Float32}
@@ -38,11 +38,11 @@ end
     end
 
     # Test DN to Reflectance
-    @test @pipe sentinel |> dn_to_reflectance |> skipmissing(_.stack) |> minimum |> all([x >= 0.001f0 for x in _])
-    @test @pipe sentinel |> dn_to_reflectance |> skipmissing(_.stack) |> maximum |> all([x <= 0.999f0 for x in _])
+    @test @pipe sentinel |> dn_to_reflectance(_; clamp_values=true) |> skipmissing(_.stack) |> minimum |> all([x >= eps(Float32) for x in _])
+    @test @pipe sentinel |> dn_to_reflectance(_; clamp_values=true) |> skipmissing(_.stack) |> maximum |> all([x <= 1.0f0 for x in _])
 
     # Test Indices
-    sentinel_sr = sentinel |> dn_to_reflectance
+    sentinel_sr =  dn_to_reflectance(sentinel; clamp_values=true)
     for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
         result = index(sentinel_sr)
         @test result isa AbstractArray{Float32}

@@ -5,7 +5,6 @@ import CairoMakie
 using Rasters
 using Statistics
 using DocStringExtensions
-using StructArrays
 using Pipe: @pipe
 
 include("utils.jl")
@@ -18,13 +17,13 @@ include("Sensors/Sensors.jl")
 
 using .Sensors
 
-include("Algorithms/Algorithms.jl")
+include("indices.jl")
 
-using .Algorithms
+include("preprocessing.jl")
 
-include("Preprocessing/Preprocessing.jl")
+include("Transformations/Transformations.jl")
 
-using .Preprocessing
+using .Transformations
 
 include("Spectral/Spectral.jl")
 
@@ -32,12 +31,23 @@ using .Spectral
 
 include("visualization.jl")
 
+# Export Sensors
+export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2A, DESIS # Types
+export red, green, blue, nir, swir1, swir2, dn2rs, asraster, unwrap, bandset # Functions
 
-export AbstractSensor, Landsat8, Landsat7, Sentinel2A, DESIS, BandSet, red, green, blue, nir, swir1, swir2, dn2rs, asraster
-export visualize, TrueColor, ColorInfrared, SWIR, Agriculture, Geology
+# Export visualization
+export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
+
+# Export Indices
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
+
+# Export Spectral
 export labelled_signatures, plot_signatures, plot_signatures!
+
+# Export Preprocessing
 export tocube, dn_to_reflectance, create_tiles, mask_pixels, landsat_qa
-export stack2df, RasterStackIterator
+
+# Export Transformations
+export AbstractTransformation, Normalize, PCA, fit, transform
 
 end
