@@ -11,6 +11,9 @@ import LinearAlgebra
 import ..Sensors: AbstractSensor, dn2rs
 import RemoteSensingToolbox: _second, _copy_dims, tocube
 
+"""
+The supertype of all transformations. Subtypes are expected to implement the `fit` and `transform` methods.
+"""
 abstract type AbstractTransformation end
 
 """

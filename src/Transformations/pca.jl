@@ -1,3 +1,6 @@
+"""
+A struct for storing the parameters necessary to perform a PCA transformation.
+"""
 struct PCA <: AbstractTransformation
     cumulative_variance::Vector{Float64}
     explained_variance::Vector{Float64}
@@ -16,6 +19,17 @@ function Base.show(io::IO, ::MIME"text/plain", x::PCA)
     print(io, "  Explained Variance: ", ev)
 end
 
+"""
+    fit(transformation::Type{PCA}, raster; components=length(raster), method=:cov, stats_fraction=1.0)
+
+Fit a PCA transformation to the given raster.
+
+# Parameters
+- `raster`: The `AbstractRaster`, `AbstractRasterStack` or `AbstractSensor` on which to perform a PCA transformation.
+- `components`: The number of principal components to use.
+- `method`: One of either `:cov` or `:cor`, depending on whether we want to run PCA on the covariance or the correlation matrix.
+- `stats_fraction`: The fraction of pixels to use in the calculation. Setting `stats_fraction < 1` will produce faster but less accurate results. 
+"""
 function fit(::Type{PCA}, raster::Union{<:AbstractRasterStack, <:AbstractSensor}; components=length(raster), method=:cov, stats_fraction=1.0)
     ((components < 1) || components > length(raster)) && throw(ArgumentError("`components` must be in the interval [1, length(stack)]!"))
     !in(method, (:cov, :cor)) && throw(ArgumentError("`method` must be one of `:cov` or `:cor`!"))
@@ -50,6 +64,15 @@ function fit(::Type{PCA}, raster::AbstractRaster; kwargs...)
     fit(PCA, RasterStack(raster; layersfrom=Rasters.Band); kwargs...)
 end
 
+"""
+    transform(transformation::PCA, raster)
+
+Perform a PCA transformation to the given raster.
+
+# Parameters
+- `transformation`: The fitted `PCA` transformation to apply.
+- `raster`: The `AbstractRaster`, `AbstractRasterStack` or `AbstractSensor` on which to perform a PCA transformation.
+"""
 function transform(transformation::PCA, raster::Union{<:AbstractRasterStack, <:AbstractSensor})
     return @pipe tocube(raster) |> transform(transformation, _)
 end

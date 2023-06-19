@@ -58,8 +58,8 @@ Pages = ["indices.jl"]
 Modules = [RemoteSensingToolbox.Spectral]
 ```
 
-# Utilities
+# Transformations
 
 ```@autodocs
-Modules = [RemoteSensingToolbox.Utils]
+Modules = [RemoteSensingToolbox.Transformations]
 ```
