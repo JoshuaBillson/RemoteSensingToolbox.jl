@@ -43,3 +43,8 @@ function bandset(::Type{<:Landsat7})
     wavelengths = [483, 560, 660, 835, 1650, 2220]
     return BandSet(bands, wavelengths)
 end
+
+function parse_files(::Type{Landsat7}, dir::String)
+    bands = bandset(Landsat7).bands .|> string
+    return @pipe readdir(dir, join=true) |> _chain_parse.(_, x -> _parse_band(bands, x), _parse_landsat_qa) |> skipmissing |> DataFrame
+end

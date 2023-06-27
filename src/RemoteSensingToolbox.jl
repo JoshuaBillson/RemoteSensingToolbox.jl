@@ -32,7 +32,7 @@ using .Spectral
 include("visualization.jl")
 
 # Export Sensors
-export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2A, DESIS # Types
+export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2, DESIS # Types
 export red, green, blue, nir, swir1, swir2, dn2rs, asraster, unwrap, bandset # Functions
 
 # Export visualization

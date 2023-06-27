@@ -1,11 +1,13 @@
 module Sensors
 
 using Rasters
+using ReadableRegex
 using DocStringExtensions
 using Pipe: @pipe
 
 import Statistics
 import Tables
+import DataFrames: DataFrame
 import RemoteSensingToolbox: align_rasters, efficient_read
 
 """
@@ -63,6 +65,9 @@ end
 """
 abstract type AbstractSensor{T} end
 
+
+include("utils.jl")
+
 include("bandset.jl")
 
 include("interface.jl")
@@ -118,10 +123,10 @@ Tables.columns(X::AbstractSensor) = unwrap(X) |> Tables.columns
 
 include("landsat8.jl")
 include("landsat7.jl")
-include("sentinel2a.jl")
+include("sentinel2.jl")
 include("DESIS.jl")
 
-export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2A, DESIS
-export red, green, blue, nir, swir1, swir2, dn2rs, asraster, unwrap, bandset
+export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2, DESIS
+export red, green, blue, nir, swir1, swir2, dn2rs, asraster, unwrap, bandset, parse_files, read
 
 end

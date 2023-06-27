@@ -40,6 +40,8 @@ Return the swir2 band for the given sensor.
 """
 swir2(::T) where {T <: AbstractSensor} = error("Error: Band 'swir2' not defined for $(T.name.wrapper)!")
 
+parse_files(::T, ::String) where {T <: AbstractSensor} = error("Error: Band 'parse_files' not defined for $(T.name.wrapper)!")
+
 """
     dn2rs(::Type{<:AbstractSensor})
 
@@ -69,3 +71,10 @@ unwrap(f, X::AbstractSensor, args...; kwargs...) = @pipe unwrap(X) |> f(_, args.
 Operate on the AbstractSensor as if it was a regular `Rasters.RasterStack`, where `args` and `kwargs` are passed to `f`.
 """
 asraster(f, X::T, args...; kwargs...) where {T <: AbstractSensor} = T.name.wrapper(f(unwrap(X), args...; kwargs...))
+
+function read(::Type{T}, dir::String) where {T <: AbstractSensor}
+    df = parse_files(T, dir)
+    files = reduce(vcat, [df[df.band .== band, :src] for band in bandset(T).bands])
+    bands = reduce(vcat, [df[df.band .== band, :band] for band in bandset(T).bands])
+    return T(RasterStack(files, name=bands))
+end
