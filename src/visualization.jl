@@ -16,15 +16,15 @@ struct Geology end
 """
     visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
     visualize(g::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{TrueColor}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{SWIR}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{Agriculture}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{Geology}; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{TrueColor}; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{SWIR}; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{Agriculture}; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{Geology}; lower=0.02, upper=0.98)
 
 Visualize a remotely sensed image by applying a histogram stretch. Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
 
-A number of band combinations are supported for types implementing the `AbstractSensor` interface.
+A number of band combinations are supported for types implementing the `AbstractBandSet` interface.
 
 # Example 1
 ```julia
@@ -70,27 +70,27 @@ function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
     return raster_to_image(img)
 end
 
-function visualize(img::AbstractSensor, ::Type{TrueColor}; lower=0.02, upper=0.98)
+function visualize(img::AbstractBandset, ::Type{TrueColor}; lower=0.02, upper=0.98)
     visualize(red(img), green(img), blue(img), lower=lower, upper=upper)
 end
 
-function visualize(img::AbstractSensor, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
+function visualize(img::AbstractBandset, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
     visualize(nir(img), red(img), green(img), lower=lower, upper=upper)
 end
 
-function visualize(img::AbstractSensor, ::Type{SWIR}; lower=0.02, upper=0.98)
+function visualize(img::AbstractBandset, ::Type{SWIR}; lower=0.02, upper=0.98)
     visualize(swir2(img), swir1(img), red(img), lower=lower, upper=upper)
 end
 
-function visualize(img::AbstractSensor, ::Type{Agriculture}; lower=0.02, upper=0.98)
+function visualize(img::AbstractBandset, ::Type{Agriculture}; lower=0.02, upper=0.98)
     visualize(swir1(img), nir(img), blue(img), lower=lower, upper=upper)
 end
 
-function visualize(img::AbstractSensor, ::Type{Geology}; lower=0.02, upper=0.98)
+function visualize(img::AbstractBandset, ::Type{Geology}; lower=0.02, upper=0.98)
     visualize(swir2(img), swir1(img), blue(img), lower=lower, upper=upper)
 end
 
-function Images.mosaicview(sensor::AbstractSensor; lower=0.02, upper=0.98, ratio=0.1, kwargs...)
+function Images.mosaicview(sensor::AbstractBandset; lower=0.02, upper=0.98, ratio=0.1, kwargs...)
     layers = keys(sensor.stack)
     imgs = [Images.imresize(visualize(sensor.stack[layer]; lower=lower, upper=upper); ratio=ratio) for layer in layers]
     return Images.mosaicview(imgs...; kwargs...)
