@@ -3,15 +3,20 @@ $TYPEDFIELDS
 
 Implements the `AbstractSensor` interface for DESIS.
 """
-struct DESIS{T<:AbstractRasterStack} <: AbstractSensor{T}
+struct DESIS{T<:AbstractRasterStack} <: AbstractBandset{T}
     stack::T
 end
 
-function DESIS(filename::String)
-    return DESIS(RasterStack(Raster(filename), layersfrom=Rasters.Band))
+function DESIS(dir::String)
+    filename = @pipe readdir(dir, join=true) |> _parse_bands.(_) |> skipmissing |> first
+    return DESIS(RasterStack(filename, layersfrom=Rasters.Band))
 end
-
+    
 unwrap(X::DESIS) = X.stack
+
+bands(::Type{<:DESIS}) = Symbol.(["Band_$i" for i in 1:235])
+
+wavelengths(::Type{<:DESIS}) = collect(401.275:2.553:998.75)
 
 blue(X::DESIS) = X[:Band_25]
 
@@ -21,8 +26,7 @@ red(X::DESIS) = X[:Band_90]
 
 nir(X::DESIS) = X[:Band_175]
 
-dn2rs(::Type{<:DESIS}) = (scale=0.0001, offset=0.0)
-
-function bandset(::Type{<:DESIS})
-    return BandSet(Symbol.(["Band_$i" for i in 1:235]), collect(401.275:2.553:998.75))
+function _parse_bands(filename::String)
+    reg = "SPECTRAL_IMAGE." * either("TIF", "tif", "jp2") * END
+    return isnothing(match(reg, filename)) ? missing : filename
 end

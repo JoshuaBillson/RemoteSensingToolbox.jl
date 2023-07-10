@@ -111,21 +111,55 @@ function wavelength(x::T, band::Symbol) where {T <: AbstractBandset}
     return wavelength(T, band)
 end
 
-function Base.view(x::T, args...) where {T <: AbstractRasterStack}
-    x = Base.view(unwrap(x), args...)
-    x isa AbstractRasterStack ? T(x) : x
+"""
+    asraster(f, X::AbstractBandset)
+
+Operate on the AbstractBandset as if it was a regular `Rasters.RasterStack`, where `args` and `kwargs` are passed to `f`.
+"""
+function asraster(f, X::T) where {T <: AbstractBandset} 
+    return T.name.wrapper(f(unwrap(X)))
 end
 
-Base.getindex(x::AbstractBandset, args...) = Base.getindex(unwrap(x), args...)
 
-Base.keys(x::AbstractBandset, args...) = Base.keys(unwrap(x))
+# Base Interface
+
+Base.show(io::IO, d::MIME"text/plain", X::AbstractBandset) = Base.show(io, d, unwrap(X))
+
+Base.write(filename::AbstractString, X::AbstractBandset; kwargs...) = Base.write(unwrap(X); kwargs...)
+
+Base.map(f, X::AbstractBandset) = asraster(x -> Base.map(f, x), X)
+
+function Base.view(x::T, args...) where {T <: AbstractBandset}
+    x = Base.view(unwrap(x), args...)
+    x isa AbstractRasterStack ? T.name.wrapper(x) : x
+end
+
+function Base.getindex(x::T, args...) where {T <: AbstractBandset}
+    x = Base.getindex(unwrap(x), args...)
+    x isa AbstractRasterStack ? T.name.wrapper(x) : x
+end
+
+for op = (:size, :length, :names, :keys)
+    @eval Base.$op(X::AbstractBandset, args...) = Base.$op(unwrap(X), args...)
+end
+
+
+# Rasters Interface
+
+Rasters.modify(f, X::AbstractBandset) = asraster(x -> Rasters.modify(f, x), X)
+
+Rasters.zonal(f, X::AbstractBandset; kwargs...) = Rasters.zonal(f, unwrap(X); kwargs...)
+
+for op = (:resample, :crop, :extend, :trim, :mask, :mask!, :replace_missing, :replace_missing!)
+    @eval Rasters.$op(X::AbstractBandset; kwargs...) = asraster(x -> Rasters.$op(x; kwargs...), X)
+end
 
 
 # Tables Interface
 
 Tables.columnaccess(::Type{<:AbstractBandset}) = true
 
-Tables.columns(X::AbstractBandset) = unwrap(X) |> Tables.columns
+Tables.columns(X::AbstractBandset) = unwrap(X) |> replace_missing |> Tables.columns
 
 
 # Exports
@@ -134,9 +168,9 @@ include("utils.jl")
 include("landsat8.jl")
 include("landsat7.jl")
 include("sentinel2.jl")
-#include("DESIS.jl")
+include("DESIS.jl")
 
-export AbstractBandset,Landsat8, Landsat7, Sentinel2 # DESIS
+export AbstractBandset,Landsat8, Landsat7, Sentinel2, DESIS
 export red, green, blue, nir, swir1, swir2, unwrap, wavelength, wavelengths, bands
 
 end

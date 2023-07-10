@@ -1,11 +1,11 @@
 """
     tocube(rs::RasterStack; layers=names(rs))
-    tocube(rs::AbstractSensor; layers=names(rs))
+    tocube(rs::AbstractBandset; layers=names(rs))
 
 Transform the multi-layer `RasterStack` to a multi-band raster.
 
 # Parameters
-- `X`: The `RasterStack` or `AbstractSensor` to be transformed into a multi-band raster.
+- `X`: The `RasterStack` or `AbstractBandset` to be transformed into a multi-band raster.
 - `layers`: The layers to include in the new raster.
 
 # Example
@@ -35,20 +35,20 @@ function tocube(rs::RasterStack; layers=names(rs))
     return rebuild(cube; dims=(dims(cube)[1], dims(cube)[2], band_dim))
 end
 
-function tocube(rs::AbstractSensor; kwargs...)
+function tocube(rs::AbstractBandset; kwargs...)
     return unwrap(tocube, rs; kwargs...)
 end
 
 """
-    dn_to_reflectance(rs::AbstractSensor; kwargs...)
+    dn_to_reflectance(rs::AbstractBandset; kwargs...)
     dn_to_reflectance(rs::AbstractRasterStack, scale, offset; clamp_values=false)
 
 Transform the raster from Digital Numbers (DN) to reflectance.
 
 # Parameters
-- `rs`: The `RasterStack` or `AbstractSensor` to be converted to reflectance.
-- `scale`: The scaling factor used to convert DN to reflectance. Inferred for `AbstractSensor` types.
-- `offset`: The offset used to convert DN to reflectance. Inferred for `AbstractSensor` types.
+- `rs`: The `RasterStack` or `AbstractBandset` to be converted to reflectance.
+- `scale`: The scaling factor used to convert DN to reflectance. Inferred for `AbstractBandset` types.
+- `offset`: The offset used to convert DN to reflectance. Inferred for `AbstractBandset` types.
 - `clamp_values`: Indicates whether to clamp reflectances into the range (0.0, 1.0].
 """
 function dn_to_reflectance(rs::AbstractRasterStack, scale::Float32, offset::Float32; clamp_values=false)
@@ -71,7 +71,7 @@ function dn_to_reflectance(rs::AbstractRasterStack, scale::AbstractFloat, offset
     dn_to_reflectance(rs, Float32(scale), Float32(offset); kwargs...)
 end
 
-function dn_to_reflectance(rs::T; kwargs...) where {T <: AbstractSensor}
+function dn_to_reflectance(rs::T; kwargs...) where {T <: AbstractBandset}
     scale, offset = dn2rs(T)
     return asraster(dn_to_reflectance, rs, scale, offset; kwargs...)
 end
@@ -109,7 +109,7 @@ function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
     return Rasters.mask(raster; with=rebuild(mask; missingval=missing_value))
 end
 
-function mask_pixels(raster::Union{<:AbstractRasterStack, <:AbstractSensor}, mask; kwargs...)
+function mask_pixels(raster::Union{<:AbstractRasterStack, <:AbstractBandset}, mask; kwargs...)
     map(raster) do x
         mask_pixels(x, mask; kwargs...)
     end
@@ -137,8 +137,18 @@ and 7 layers:
 ```
 """
 function landsat_qa(qa_src::String)
+    # Parse QA File
+    filename = 
+        if isdir(qa_src)
+            files = readdir(qa_src, join=true)
+            reg = BEGIN * zero_or_more(ANY) * "QA_PIXEL." * either("TIF", "tif", "jp2") * END
+            @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string
+        else
+            qa_src
+        end
+
     # Read QA Raster
-    qa = Raster(qa_src)
+    qa = Raster(filename)
 
     # Read Bits
     fill = @pipe _read_bit(qa, 1) |> rebuild(_; missingval=0x01)
