@@ -1,99 +1,79 @@
 """True color band composite."""
-struct TrueColor end
+struct TrueColor{T<:AbstractBandset} end
 
 """Color infrared band composite."""
-struct ColorInfrared end
+struct ColorInfrared{T<:AbstractBandset} end
 
 """SWIR band composite."""
-struct SWIR end
+struct SWIR{T<:AbstractBandset} end
 
 """Agriculture band composite."""
-struct Agriculture end
+struct Agriculture{T<:AbstractBandset} end
 
 """Geology band composite."""
-struct Geology end
+struct Geology{T<:AbstractBandset} end
 
 """
-    visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
     visualize(g::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{TrueColor}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{SWIR}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{Agriculture}; lower=0.02, upper=0.98)
-    visualize(img::AbstractSensor, ::Type{Geology}; lower=0.02, upper=0.98)
+    visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
+    visualize(img::AbstractBandSet, ::Type{TrueColor{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractBandSet, ::Type{ColorInfrared{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractBandSet, ::Type{SWIR{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractBandSet, ::Type{Agriculture{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractBandSet, ::Type{Geology{AbstractBandset}}; kwargs...)
 
-Visualize a remotely sensed image by applying a histogram stretch. Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
+Visualize a satellite image after applying a histogram stretch. Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
 
-A number of band combinations are supported for types implementing the `AbstractSensor` interface.
+A number of band combinations are supported for types implementing the `AbstractBandSet` interface.
 
 # Example 1
 ```julia
-landsat = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1/")
-img = visualize(red(landsat), green(landsat), blue(landsat))
-save("truecolor.png", img)
+landsat = read(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+img = mndwi(landsat, Landsat8) |> visualize
+save("mndwi.png", img)
 ```
 
 # Example 2
 ```julia
-landsat = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1/")
-img = visualize(landsat, TrueColor)
+landsat = read(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+img = visualize(landsat, TrueColor{Landsat8}; upper=0.90)
 save("truecolor.png", img)
 ```
 """
-function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(Float32.(r), Float32.(g), Float32.(b); lower=lower, upper=upper)
+function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; kwargs...)
+    visualize(Float32.(r), Float32.(g), Float32.(b); kwargs...)
+end
+
+function visualize(g::AbstractRaster; kwargs...)
+    visualize(Float32.(g); kwargs...)
 end
     
+function visualize(stack::AbstractRasterStack, ::Type{TrueColor{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(red(stack, T), green(stack, T), blue(stack, T); kwargs...)
+end
+
+function visualize(stack::AbstractRasterStack ,::Type{ColorInfrared{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(nir(stack, T), red(stack, T), green(stack, T); kwargs...)
+end
+
+function visualize(stack::AbstractRasterStack ,::Type{SWIR{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(swir2(stack, T), swir1(stack, T), red(stack, T); kwargs...)
+end
+
+function visualize(stack::AbstractRasterStack ,::Type{Agriculture{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(swir1(stack, T), nir(stack, T), blue(stack, T); kwargs...)
+end
+
+function visualize(stack::AbstractRasterStack ,::Type{Geology{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(swir2(stack, T),swir1(stack, T), blue(stack, T); kwargs...)
+end
+
 function visualize(r::AbstractRaster{Float32}, g::AbstractRaster{Float32}, b::AbstractRaster{Float32}; lower=0.02, upper=0.98)
-    @pipe map(img->linear_stretch(img, lower, upper), align_rasters(r, g, b)) |>
-    cat(extract_raster_data.(_)..., dims=3) |>
-    raster_to_image
+    return @pipe map(x -> linear_stretch(x, lower, upper), (r, g, b)) |> cat(_..., dims=Rasters.Band) |> raster_to_image
 end
 
-function visualize(g::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(Float32.(g); lower=lower, upper=upper)
-end
-    
 function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
-    # Read Raster Into Memory
-    raster = efficient_read(g)
-
-    # Perform Histogram Stretch
-    img = linear_stretch(raster, lower, upper)
-
-    # Mask Missing Values
-    if !isnothing(missingval(raster))
-        mask!(img; with=raster, missingval=0.0f0)
-    end
-
-    # Convert To Image
-    return raster_to_image(img)
-end
-
-function visualize(img::AbstractSensor, ::Type{TrueColor}; lower=0.02, upper=0.98)
-    visualize(red(img), green(img), blue(img), lower=lower, upper=upper)
-end
-
-function visualize(img::AbstractSensor, ::Type{ColorInfrared}; lower=0.02, upper=0.98)
-    visualize(nir(img), red(img), green(img), lower=lower, upper=upper)
-end
-
-function visualize(img::AbstractSensor, ::Type{SWIR}; lower=0.02, upper=0.98)
-    visualize(swir2(img), swir1(img), red(img), lower=lower, upper=upper)
-end
-
-function visualize(img::AbstractSensor, ::Type{Agriculture}; lower=0.02, upper=0.98)
-    visualize(swir1(img), nir(img), blue(img), lower=lower, upper=upper)
-end
-
-function visualize(img::AbstractSensor, ::Type{Geology}; lower=0.02, upper=0.98)
-    visualize(swir2(img), swir1(img), blue(img), lower=lower, upper=upper)
-end
-
-function Images.mosaicview(sensor::AbstractSensor; lower=0.02, upper=0.98, ratio=0.1, kwargs...)
-    layers = keys(sensor.stack)
-    imgs = [Images.imresize(visualize(sensor.stack[layer]; lower=lower, upper=upper); ratio=ratio) for layer in layers]
-    return Images.mosaicview(imgs...; kwargs...)
+    return linear_stretch(g, lower, upper) |> raster_to_image
 end
 
 function plot_mask(mask, classes)

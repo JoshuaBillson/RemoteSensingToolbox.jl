@@ -2,38 +2,40 @@ module RemoteSensingToolbox
 
 import Images
 import CairoMakie
+import DataFrames
 using Rasters
 using Statistics
 using DocStringExtensions
+using ReadableRegex
 using Pipe: @pipe
 
 include("utils.jl")
 
-include("Utils/Utils.jl")
+#include("Utils/Utils.jl")
 
-using .Utils
+#using .Utils
 
-include("Sensors/Sensors.jl")
+include("Bandsets/Bandsets.jl")
 
-using .Sensors
+using .Bandsets
 
 include("indices.jl")
 
 include("preprocessing.jl")
 
-include("Transformations/Transformations.jl")
+#include("Transformations/Transformations.jl")
 
-using .Transformations
+#using .Transformations
 
-include("Spectral/Spectral.jl")
+#include("Spectral/Spectral.jl")
 
-using .Spectral
+#using .Spectral
 
 include("visualization.jl")
 
-# Export Sensors
-export AbstractSensor, BandSet, Landsat8, Landsat7, Sentinel2A, DESIS # Types
-export red, green, blue, nir, swir1, swir2, dn2rs, asraster, unwrap, bandset # Functions
+# Export Bandsets
+export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS
+export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance
 
 # Export visualization
 export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
@@ -42,10 +44,10 @@ export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 # Export Spectral
-export labelled_signatures, plot_signatures, plot_signatures!
+#export labelled_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
-export tocube, dn_to_reflectance, create_tiles, mask_pixels, landsat_qa
+export tocube, create_tiles, mask_pixels, mask_pixels!
 
 # Export Transformations
 export AbstractTransformation, Normalize, PCA, fit, transform

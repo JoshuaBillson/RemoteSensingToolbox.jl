@@ -1,6 +1,6 @@
 """
     mndwi(green::AbstractRaster, swir::AbstractRaster)
-    mndwi(sensor::AbstractSensor)
+    mndwi(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the Modified Normalised Difference Water Index (Xu 2006).
 
@@ -11,18 +11,17 @@ function mndwi(green::AbstractRaster, swir::AbstractRaster)
 end
  
 function mndwi(green::AbstractRaster{Float32}, swir::AbstractRaster{Float32})
-    green, swir = align_rasters(green, swir)
     index = (green .- swir) ./ (green .+ swir)
-    return mask(index; with=green, missingval=-32768f0)
+    return mask(index; with=green, missingval=-Inf32) |> _drop_nan
 end
 
-function mndwi(sensor::AbstractSensor)
-    return mndwi(green(sensor), swir1(sensor))
+function mndwi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return mndwi(green(stack, T), swir1(stack, T))
 end
 
 """
     ndwi(green::AbstractRaster, nir::AbstractRaster)
-    ndwi(sensor::AbstractSensor)
+    ndwi(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the Normalized Difference Water Index (McFeeters 1996).
 
@@ -33,18 +32,17 @@ function ndwi(green::AbstractRaster, nir::AbstractRaster)
 end
  
 function ndwi(green::AbstractRaster{Float32}, nir::AbstractRaster{Float32})
-    green, nir = align_rasters(green, nir)
     index = (green .- nir) ./ (green .+ nir)
-    return mask(index; with=green, missingval=-32768f0)
+    return mask(index; with=green, missingval=-Inf32) |> _drop_nan
 end
 
-function ndwi(sensor::AbstractSensor)
-    return ndwi(green(sensor), nir(sensor))
+function ndwi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return ndwi(green(stack, T), nir(stack, T))
 end
 
 """
     ndvi(nir::AbstractRaster, red::AbstractRaster)
-    ndvi(sensor::AbstractSensor)
+    ndvi(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the Normalized Difference Vegetation Index.
 
@@ -55,18 +53,17 @@ function ndvi(nir::AbstractRaster, red::AbstractRaster)
 end
  
 function ndvi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32})
-    nir, red = align_rasters(nir, red)
     index = (nir .- red) ./ (nir .+ red)
-    return mask(index; with=nir, missingval=-32768f0)
+    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
 end
 
-function ndvi(sensor::AbstractSensor)
-    return ndvi(nir(sensor), red(sensor))
+function ndvi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return ndvi(nir(stack, T), red(stack, T))
 end
 
 """
     savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
-    savi(sensor::AbstractSensor; L=0.33)
+    savi(stack::AbstractRasterStack, ::Type{AbstractBandset}; L=0.33)
 
 Compute the Soil Adjusted Vegetation Index (Huete 1988).
 
@@ -81,18 +78,17 @@ function savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
 end
  
 function savi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32}; L=0.33)
-    nir, red = align_rasters(nir, red)
     index = ((nir .- red) ./ (nir .+ red .+ Float32(L))) .* (1.0f0 + Float32(L))
-    return mask(index; with=nir, missingval=-32768f0)
+    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
 end
 
-function savi(sensor::AbstractSensor; L=0.33)
-    return savi(nir(sensor), red(sensor); L=L)
+function savi(stack::AbstractRasterStack, ::Type{T}; L=0.33) where {T <: AbstractBandset}
+    return savi(nir(stack, T), red(stack, T); L=L)
 end
 
 """
     ndmi(nir::AbstractRaster, swir1::AbstractRaster)
-    ndmi(sensor::AbstractSensor)
+    ndmi(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the Normalized Difference Moisture Index.
 
@@ -105,18 +101,17 @@ function ndmi(nir::AbstractRaster, swir1::AbstractRaster)
 end
  
 function ndmi(nir::AbstractRaster{Float32}, swir1::AbstractRaster{Float32})
-    nir, swir1 = align_rasters(nir, swir1)
     index = (nir .- swir1) ./ (nir .+ swir1)
-    return mask(index; with=nir, missingval=-32768f0)
+    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
 end
 
-function ndmi(sensor::AbstractSensor)
-    return ndmi(nir(sensor), swir1(sensor))
+function ndmi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return ndmi(nir(stack, T), swir1(stack, T))
 end
 
 """
     nbri(nir::AbstractRaster, swir2::AbstractRaster)
-    nbri(sensor::AbstractSensor)
+    nbri(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the Normalized Burn Ratio Index.
 
@@ -129,18 +124,17 @@ function nbri(nir::AbstractRaster, swir2::AbstractRaster)
 end
  
 function nbri(nir::AbstractRaster{Float32}, swir2::AbstractRaster{Float32})
-    nir, swir2 = align_rasters(nir, swir2)
     index = (nir .- swir2) ./ (nir .+ swir2)
-    return mask(index; with=nir, missingval=-32768f0)
+    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
 end
 
-function nbri(sensor::AbstractSensor)
-    return nbri(nir(sensor), swir2(sensor))
+function nbri(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return nbri(nir(stack, T), swir2(stack, T))
 end
 
 """
     ndbi(swir1::AbstractRaster, nir::AbstractRaster)
-    ndbi(sensor::AbstractSensor)
+    ndbi(stack::AbstractRasterStack, ::Type{AbstractBandset})
 
 Compute the The Normalized Difference Built-up Index
 
@@ -153,11 +147,10 @@ function ndbi(swir1::AbstractRaster, nir::AbstractRaster)
 end
  
 function ndbi(swir1::AbstractRaster{Float32}, nir::AbstractRaster{Float32})
-    swir1, nir = align_rasters(swir1, nir)
     index = (swir1 .- nir) ./ (swir1 .+ nir)
-    return mask(index; with=nir, missingval=-32768f0)
+    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
 end
 
-function ndbi(sensor::AbstractSensor)
-    return ndbi(swir1(sensor), nir(sensor))
+function ndbi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
+    return ndbi(swir1(stack, T), nir(stack, T))
 end
