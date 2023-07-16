@@ -40,43 +40,6 @@ function tocube(rs::AbstractBandset; kwargs...)
 end
 
 """
-    dn_to_reflectance(rs::AbstractBandset; kwargs...)
-    dn_to_reflectance(rs::AbstractRasterStack, scale, offset; clamp_values=false)
-
-Transform the raster from Digital Numbers (DN) to reflectance.
-
-# Parameters
-- `rs`: The `RasterStack` or `AbstractBandset` to be converted to reflectance.
-- `scale`: The scaling factor used to convert DN to reflectance. Inferred for `AbstractBandset` types.
-- `offset`: The offset used to convert DN to reflectance. Inferred for `AbstractBandset` types.
-- `clamp_values`: Indicates whether to clamp reflectances into the range (0.0, 1.0].
-"""
-function dn_to_reflectance(rs::AbstractRasterStack, scale::Float32, offset::Float32; clamp_values=false)
-    map(rs) do r
-        # Apply Scale And Offset
-        reflectance = (r .* scale) .+ offset
-
-        # Clamp Reflectance
-        clamp_values && clamp!(reflectance, eps(Float32), eltype(reflectance)(1.0))
-
-        # Mask Missing Pixels
-        mask!(reflectance; with=r, missingval=eltype(reflectance)(-Inf))
-
-        # Set Missing Value
-        rebuild(reflectance, missingval=eltype(reflectance)(-Inf))
-    end
-end
-
-function dn_to_reflectance(rs::AbstractRasterStack, scale::AbstractFloat, offset::AbstractFloat; kwargs...)
-    dn_to_reflectance(rs, Float32(scale), Float32(offset); kwargs...)
-end
-
-function dn_to_reflectance(rs::T; kwargs...) where {T <: AbstractBandset}
-    scale, offset = dn2rs(T)
-    return asraster(dn_to_reflectance, rs, scale, offset; kwargs...)
-end
-
-"""
     create_tiles(raster, tile::Tuple{Int,Int}; stride=tile)
 
 Slice the given raster into tiles with size `tile`.
@@ -109,64 +72,29 @@ function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
     return Rasters.mask(raster; with=rebuild(mask; missingval=missing_value))
 end
 
-function mask_pixels(raster::Union{<:AbstractRasterStack, <:AbstractBandset}, mask; kwargs...)
+function mask_pixels(raster::AbstractRasterStack, mask; kwargs...)
     map(raster) do x
         mask_pixels(x, mask; kwargs...)
     end
 end
 
 """
-    landsat_qa(qa_src::String)
+    mask_pixels!(raster, mask; invert_mask=false)
 
-Read and decode a landsat quality assurance (QA) raster. Decodes each bit into its own `RasterStack` layer.
+Drop pixels from a raster according to a given mask. The mask and raster must have the same extent and size.
 
-# Example
-```julia-repl
-julia> qa = landsat_qa("LC08_L2SP_043024_20200802_20200914_02_T1_QA_PIXEL.TIF")
-RasterStack with dimensions: 
-  X Projected{Float64} LinRange{Float64}(493785.0, 728385.0, 7821) ForwardOrdered Regular Points crs: WellKnownText,
-  Y Projected{Float64} LinRange{Float64}(5.84638e6, 5.60878e6, 7921) ReverseOrdered Regular Points crs: WellKnownText
-and 7 layers:
-  :dilated_cloud UInt8 dims: X, Y (7821×7921)
-  :cirrus        UInt8 dims: X, Y (7821×7921)
-  :cloud         UInt8 dims: X, Y (7821×7921)
-  :cloud_shadow  UInt8 dims: X, Y (7821×7921)
-  :snow          UInt8 dims: X, Y (7821×7921)
-  :clear         UInt8 dims: X, Y (7821×7921)
-  :water         UInt8 dims: X, Y (7821×7921)
-```
+# Parameters
+- `raster`: The raster to be masked.
+- `mask`: A mask defining which pixels we want to drop. By default, we drop pixels corresponding to mask values of `1`.
+- `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
 """
-function landsat_qa(qa_src::String)
-    # Parse QA File
-    filename = 
-        if isdir(qa_src)
-            files = readdir(qa_src, join=true)
-            reg = BEGIN * zero_or_more(ANY) * "QA_PIXEL." * either("TIF", "tif", "jp2") * END
-            @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string
-        else
-            qa_src
-        end
+function mask_pixels!(raster::AbstractRaster, mask; invert_mask=false)
+    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
+    return Rasters.mask!(raster; with=rebuild(mask; missingval=missing_value))
+end
 
-    # Read QA Raster
-    qa = Raster(filename)
-
-    # Read Bits
-    fill = @pipe _read_bit(qa, 1) |> rebuild(_; missingval=0x01)
-    dilated_cloud = @pipe _read_bit(qa, 2) |> rebuild(_; missingval=0xff)
-    cirrus = @pipe _read_bit(qa, 3) |> rebuild(_; missingval=0xff)
-    cloud = @pipe _read_bit(qa, 4) |> rebuild(_; missingval=0xff)
-    cloud_shadow = @pipe _read_bit(qa, 5) |> rebuild(_; missingval=0xff)
-    snow = @pipe _read_bit(qa, 6) |> rebuild(_; missingval=0xff)
-    clear = @pipe _read_bit(qa, 7) |> rebuild(_; missingval=0xff)
-    water = @pipe _read_bit(qa, 8) |> rebuild(_; missingval=0xff)
-
-    # Mask Missing Pixels
-    rasters = [dilated_cloud, cirrus, cloud, cloud_shadow, snow, clear, water]
-    for raster in rasters
-        mask!(raster; with=fill)
+function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
+    map(raster) do x
+        mask_pixels!(x, mask; kwargs...)
     end
-    
-    # Return RasterStack
-    names = (:dilated_cloud, :cirrus, :cloud, :cloud_shadow, :snow, :clear, :water)
-    return RasterStack(rasters..., name=names)
 end

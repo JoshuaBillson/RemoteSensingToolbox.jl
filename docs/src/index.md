@@ -4,13 +4,12 @@ CurrentModule = RemoteSensingToolbox
 
 # RemoteSensingToolbox
 
-[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package intended to provide a collection of commonly used tools for working with remotely sensed imagery.
+[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package intended to provide a collection of tools for visualizing, manipulating, and interpreting remotely sensed imagery.
 
-# Sensors
+`RemoteSensingToolbox` provides a number of utilities for . First, lets load the imagery we want to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
+# Bandsets
 
-Sensors are julia structs that wrap a typical `Rasters.RasterStack` object to provide compatability with many `RemoteSensingToolbox` algorithms and methods.
-
-The following methods are supported by all `AbstractSensor` types:
+Bandsets are julia types that encode the sensor-specific information needed for many methods in `RemoteSensingToolbox` to work without the need for tedious details provided by the end user. 
 
 |                           |                                                                              |
 | :------------------------ | :--------------------------------------------------------------------------- |

@@ -2,6 +2,7 @@ module RemoteSensingToolbox
 
 import Images
 import CairoMakie
+import DataFrames
 using Rasters
 using Statistics
 using DocStringExtensions
@@ -33,8 +34,8 @@ include("preprocessing.jl")
 include("visualization.jl")
 
 # Export Bandsets
-export AbstractBandset,Landsat8, Landsat7, Sentinel2, DESIS
-export red, green, blue, nir, swir1, swir2, unwrap, wavelength, wavelengths, bands
+export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS
+export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance
 
 # Export visualization
 export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
@@ -46,7 +47,7 @@ export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 #export labelled_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
-export tocube, dn_to_reflectance, create_tiles, mask_pixels, landsat_qa
+export tocube, create_tiles, mask_pixels, mask_pixels!
 
 # Export Transformations
 export AbstractTransformation, Normalize, PCA, fit, transform

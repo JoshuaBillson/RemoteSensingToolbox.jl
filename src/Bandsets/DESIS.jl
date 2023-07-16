@@ -1,32 +1,38 @@
 """
 $TYPEDFIELDS
 
-Implements the `AbstractSensor` interface for DESIS.
+Implements the `AbstractBandset` interface for Landsat 7.
 """
-struct DESIS{T<:AbstractRasterStack} <: AbstractBandset{T}
-    stack::T
-end
+struct DESIS <: AbstractBandset end
 
-function DESIS(dir::String)
-    filename = @pipe readdir(dir, join=true) |> _parse_bands.(_) |> skipmissing |> first
-    return DESIS(RasterStack(filename, layersfrom=Rasters.Band))
-end
-    
-unwrap(X::DESIS) = X.stack
+bands(::Type{DESIS}) = Symbol.(["B_$i" for i in 1:235])
 
-bands(::Type{<:DESIS}) = Symbol.(["Band_$i" for i in 1:235])
+wavelengths(::Type{DESIS}) = collect(401.275:2.553:998.75)
 
-wavelengths(::Type{<:DESIS}) = collect(401.275:2.553:998.75)
+blue(::Type{DESIS}) = :B_25
 
-blue(X::DESIS) = X[:Band_25]
+green(::Type{DESIS}) = :B_52
 
-green(X::DESIS) = X[:Band_52]
+red(::Type{DESIS}) = :B_90
 
-red(X::DESIS) = X[:Band_90]
+nir(::Type{DESIS}) = :B_175
 
-nir(X::DESIS) = X[:Band_175]
+dn2rs(::Type{DESIS}) = (scale=0.0001, offset=0.0)
 
-function _parse_bands(filename::String)
+function parse_band(::Type{DESIS}, filename::String)
     reg = "SPECTRAL_IMAGE." * either("TIF", "tif", "jp2") * END
-    return isnothing(match(reg, filename)) ? missing : filename
+    return isnothing(match(reg, filename)) ? nothing : bands(DESIS)
+end
+
+function read_qa(::Type{DESIS}, src::String)
+    if isdir(src)
+        files = readdir(src, join=true)
+        reg = BEGIN * zero_or_more(ANY) * "QA_PIXEL." * either("TIF", "tif", "jp2") * END
+        return @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string |> Raster |> _parse_landsat_qa
+    end
+    return Raster(src) |> _parse_landsat_qa
+end
+
+function dn_to_reflectance(stack::AbstractRasterStack, ::Type{DESIS}; clamp_values=false)
+    return map(x -> _decode_dn(x, 0.0001, 0.0; clamp_values), stack)
 end

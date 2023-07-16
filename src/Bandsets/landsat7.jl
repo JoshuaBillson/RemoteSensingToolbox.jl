@@ -1,33 +1,37 @@
 """
 $TYPEDFIELDS
 
-Implements the `AbstractBandset` interface for Landsat 8.
+Implements the `AbstractBandset` interface for Landsat 7.
 """
-struct Landsat7{T} <: AbstractBandset{T}
-    stack::T
+struct Landsat7 <: AbstractBandset end
+
+bands(::Type{Landsat7}) = [:B1, :B2, :B3, :B4, :B5, :B7]
+
+wavelengths(::Type{Landsat7}) = [483, 560, 660, 835, 1650, 2220]
+
+blue(::Type{Landsat7}) = :B1
+
+green(::Type{Landsat7}) = :B2
+
+red(::Type{Landsat7}) = :B3
+
+nir(::Type{Landsat7}) = :B4
+
+swir1(::Type{Landsat7}) = :B5
+
+swir2(::Type{Landsat7}) = :B7
+
+dn2rs(::Type{Landsat7}) = (scale=0.0000275, offset=-0.2)
+
+function read_qa(::Type{Landsat7}, src::String)
+    if isdir(src)
+        files = readdir(src, join=true)
+        reg = BEGIN * zero_or_more(ANY) * "QA_PIXEL." * either("TIF", "tif", "jp2") * END
+        return @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string |> Raster |> _parse_landsat_qa
+    end
+    return Raster(src) |> _parse_landsat_qa
 end
 
-function Landsat7(dir::String)
-    files = @pipe bands(Landsat7) |> string.(_) |> map(x -> _parse_band(_, x), readdir(dir, join=true)) |> skipmissing |> collect
-    RasterStack(map(x -> x.src, files), name=map(x -> x.band, files)) |> Landsat7
+function dn_to_reflectance(stack::AbstractRasterStack, ::Type{Landsat7}; clamp_values=false)
+    return map(x -> _decode_dn(x, 0.0000275, -0.2; clamp_values), stack)
 end
-    
-unwrap(X::Landsat7) = X.stack
-
-bands(::Type{<:Landsat7}) = [:B1, :B2, :B3, :B4, :B5, :B7]
-
-wavelengths(::Type{<:Landsat7}) = [483, 560, 660, 835, 1650, 2220]
-
-blue(X::Landsat7) = X[:B1]
-
-green(X::Landsat7) = X[:B2]
-
-red(X::Landsat7) = X[:B3]
-
-nir(X::Landsat7) = X[:B4]
-
-swir1(X::Landsat7) = X[:B5]
-
-swir2(X::Landsat7) = X[:B7]
-
-#dn2rs(::Type{<:Landsat8}) = (scale=0.0000275, offset=-0.2)
