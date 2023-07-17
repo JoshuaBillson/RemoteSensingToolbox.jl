@@ -1,5 +1,6 @@
 module RemoteSensingToolbox
 
+import ArchGDAL
 import Images
 import CairoMakie
 import DataFrames

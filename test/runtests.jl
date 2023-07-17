@@ -1,6 +1,7 @@
 using RemoteSensingToolbox
 using Test
 using Images
+import ArchGDAL
 using Pipe: @pipe
 
 @testset "Landsat" begin

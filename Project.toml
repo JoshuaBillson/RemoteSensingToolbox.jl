@@ -4,6 +4,7 @@ authors = ["Joshua Billson"]
 version = "0.0.1"
 
 [deps]
+ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -24,9 +25,9 @@ DataFrames = "1"
 DocStringExtensions = "0.9"
 Images = "0.25"
 Pipe = "1"
-Rasters = "0.7.2"
+Rasters = "0.8"
 Shapefile = "0.9, 0.10"
-julia = "1.8"
+julia = "1.9"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
