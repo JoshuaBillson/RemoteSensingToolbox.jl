@@ -7,6 +7,21 @@
 
 [RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl). It is intended to provide a collection of tools for visualizing, manipulating, and interpreting remotely sensed imagery.
 
+# Features
+
+| Feature                   | Description                                                 | Implemented        |
+| :------------------------ | :---------------------------------------------------------- | :----------------: |
+| Visualization             | Visualize images with various band composites               | :white_check_mark: |
+| Land Cover Indices        | Calculate indices such as MNDWI and NDVI                    | :white_check_mark: |
+| QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks     | :white_check_mark: |
+| Pixel Masking             | Mask pixels to remove objects such as clouds or shadows     | :white_check_mark: |
+| PCA                       | Perform PCA analysis, transformation, and reconstruction    | :white_check_mark: |
+| MNF                       | Minimum Noise Transform                                     | :x:                |
+| Signature Analysis        | Visualize spectral signatures for provided land cover types | :white_check_mark: |
+| Land Cover Classification | Exposes an `MLJ` interface for classifying land cover types | :x:                |
+| Endmember Extraction      | Extract spectral endmembers from an image                   | :x:                |
+| Spectral Unmixing         | Perform spectral unmixing under a given endmember library   | :x:                |
+
 # Quickstart Example
 
 First, let's load some imagery to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
