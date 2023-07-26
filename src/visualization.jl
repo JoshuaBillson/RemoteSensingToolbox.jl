@@ -69,11 +69,11 @@ function visualize(stack::AbstractRasterStack ,::Type{Geology{T}}; kwargs...) wh
 end
 
 function visualize(r::AbstractRaster{Float32}, g::AbstractRaster{Float32}, b::AbstractRaster{Float32}; lower=0.02, upper=0.98)
-    return @pipe map(x -> linear_stretch(x, lower, upper), (r, g, b)) |> cat(_..., dims=Rasters.Band) |> raster_to_image
+    return @pipe map(x -> _linear_stretch(x, lower, upper), (r, g, b)) |> cat(_..., dims=Rasters.Band) |> _raster_to_image
 end
 
 function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
-    return linear_stretch(g, lower, upper) |> raster_to_image
+    return _linear_stretch(g, lower, upper) |> _raster_to_image
 end
 
 function plot_mask(mask, classes)
@@ -87,4 +87,42 @@ function plot_mask(mask, classes)
     CairoMakie.Legend(fig[1,2], elements, classes, "Legend")
 
     return fig
+end
+
+"Adjust image histogram by performing a linear stretch to squeeze all values between the percentiles `lower` and `upper` into the range [0,1]."
+function _linear_stretch(img::AbstractRaster, lower, upper)
+    return _linear_stretch(Float32.(efficient_read(img)), lower, upper)
+end
+
+function _linear_stretch(img::AbstractRaster{Float32}, lower, upper)
+    img = img |> efficient_read
+    values = img |> skipmissing |> collect |> sort!
+    lb = quantile(values, lower, sorted=true)
+    ub = quantile(values, upper, sorted=true)
+    normalized = Rasters.modify(x -> Images.adjust_histogram(x, Images.LinearStretching((lb,ub)=>nothing)), img)
+    return mask!(normalized; with=img)
+end
+
+"Turn a raster into an image compatible with Images.jl."
+function _raster_to_image(raster::Raster)
+    # Set Missing Values To Zero (Black)
+    raster = replace_missing(raster, eltype(raster)(0))
+
+    # Dispatch Based On Element Type and Shape
+    return _raster_to_image(raster.data)
+end
+
+function _raster_to_image(raster::Array)
+    return _raster_to_image(Images.N0f8.(raster))
+end
+
+function _raster_to_image(raster::Array{Images.N0f8})
+    if size(raster, 3) == 1
+        return _raster_to_image(raster[:,:,1])
+    end
+    return @pipe permutedims(raster, (3,2,1)) |> Images.colorview(Images.RGB, _)
+end
+
+function _raster_to_image(raster::Matrix{Images.N0f8})
+    return @pipe permutedims(raster, (2, 1)) |> Images.colorview(Images.Gray, _)
 end

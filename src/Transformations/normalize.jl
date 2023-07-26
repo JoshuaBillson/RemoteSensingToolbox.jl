@@ -15,14 +15,14 @@ function Base.show(io::IO, ::MIME"text/plain", x::Normalize)
 end
 
 """
-    fit(transformation::Type{Normalize}, raster)
+    fit_transform(transformation::Type{Normalize}, raster)
 
 Fit a PCA transformation to the given raster.
 
 # Parameters
-- `raster`: The `AbstractRaster`, `AbstractRasterStack` or `AbstractSensor` on which to perform a normalization transformation.
+- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a normalization transformation.
 """
-function fit(::Type{Normalize}, raster::Union{<:AbstractRasterStack, <:AbstractSensor})
+function fit_transform(::Type{Normalize}, raster::AbstractRasterStack)
     stats = map(keys(raster)) do layer
         x = raster[layer]
         μ = x |> skipmissing |> mean |> Float32
@@ -32,7 +32,7 @@ function fit(::Type{Normalize}, raster::Union{<:AbstractRasterStack, <:AbstractS
     return Normalize(map(first, stats) |> collect, map(_second, stats) |> collect)
 end
 
-function fit(::Type{Normalize}, raster::AbstractRaster)
+function fit_transform(::Type{Normalize}, raster::AbstractRaster)
     return fit(Normalize, RasterStack(raster, layersfrom=Rasters.Band))
 end
 
@@ -43,9 +43,9 @@ Perform a PCA transformation to the given raster.
 
 # Parameters
 - `transformation`: The fitted `Normalize` transformation to apply.
-- `raster`: The `AbstractRaster`, `AbstractRasterStack` or `AbstractSensor` on which to perform a normalization transformation.
+- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a normalization transformation.
 """
-function transform(transformation::Normalize, raster::Union{<:AbstractRasterStack, <:AbstractSensor})
+function transform(transformation::Normalize, raster::AbstractRasterStack)
     i = 0
     map(raster) do x
         i += 1

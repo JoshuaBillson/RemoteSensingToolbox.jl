@@ -53,3 +53,39 @@ end
     end
 
 end
+
+@testset "PCA" begin
+
+    # Load Sentinel
+    sentinel = read_bands(Sentinel2, "data/sentinel/")
+
+    # Fit PCA
+    pca = fit_transform(PCA, sentinel)
+
+    # Test PCA Fit Results
+    @test pca.cumulative_variance[end] ≈ 1.0
+    @test all(pca.cumulative_variance .<= 1.0)
+    @test sort(pca.cumulative_variance) == pca.cumulative_variance
+    @test sum(pca.explained_variance) ≈ 1.0
+    @test sort(pca.explained_variance, rev=true) == pca.explained_variance
+
+    # Test PCA Floating Point Transformation
+    transformed = transform(pca, sentinel)
+    @test size(transformed) == size(tocube(sentinel))
+    @test transformed.missingval == Inf32
+
+    # Test PCA Floating Point Inverse Transformation
+    recovered = inverse_transform(pca, transformed)
+    @test names(sentinel) == names(recovered)
+    @test all(isapprox.(tocube(recovered).data, tocube(sentinel).data, atol=0.1))
+
+    # Test PCA Integer Transformation
+    transformed_int = transform(pca, sentinel, output_type=Int16)
+    @test eltype(transformed_int) == Int16
+    @test transformed_int.missingval == 32767
+
+    # Test PCA Integer Inverse Transformation
+    recovered_int = inverse_transform(pca, transformed_int)
+    @test all(isapprox.(tocube(sentinel).data,  tocube(recovered_int).data, atol=1.5))
+
+end

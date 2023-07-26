@@ -17,6 +17,8 @@ red(::Type{Sentinel2}) = :B04
 
 nir(::Type{Sentinel2}) = :B08
 
+nir(raster::Rasters.AbstractRasterStack, ::Type{Sentinel2}) = :B8A in names(raster) ? raster[:B8A] : raster[:B08]
+
 swir1(::Type{Sentinel2}) = :B11
 
 swir2(::Type{Sentinel2}) = :B12

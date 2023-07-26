@@ -35,10 +35,6 @@ function tocube(rs::RasterStack; layers=names(rs))
     return rebuild(cube; dims=(dims(cube)[1], dims(cube)[2], band_dim))
 end
 
-function tocube(rs::AbstractBandset; kwargs...)
-    return unwrap(tocube, rs; kwargs...)
-end
-
 """
     create_tiles(raster, tile::Tuple{Int,Int}; stride=tile)
 
@@ -73,9 +69,7 @@ function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
 end
 
 function mask_pixels(raster::AbstractRasterStack, mask; kwargs...)
-    map(raster) do x
-        mask_pixels(x, mask; kwargs...)
-    end
+    return map(x -> mask_pixels(x, mask; kwargs...), raster)
 end
 
 """
@@ -94,7 +88,5 @@ function mask_pixels!(raster::AbstractRaster, mask; invert_mask=false)
 end
 
 function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
-    map(raster) do x
-        mask_pixels!(x, mask; kwargs...)
-    end
+    return map(x -> mask_pixels!(x, mask; kwargs...), raster)
 end

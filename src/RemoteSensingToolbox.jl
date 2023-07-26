@@ -24,9 +24,9 @@ include("indices.jl")
 
 include("preprocessing.jl")
 
-#include("Transformations/Transformations.jl")
+include("Transformations/Transformations.jl")
 
-#using .Transformations
+using .Transformations
 
 #include("Spectral/Spectral.jl")
 
@@ -51,6 +51,6 @@ export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 export tocube, create_tiles, mask_pixels, mask_pixels!
 
 # Export Transformations
-export AbstractTransformation, Normalize, PCA, fit, transform
+export AbstractTransformation, Normalize, PCA, fit_transform, transform, inverse_transform
 
 end
