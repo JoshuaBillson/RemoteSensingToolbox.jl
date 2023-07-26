@@ -16,7 +16,7 @@
 | QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks     | :white_check_mark: |
 | Pixel Masking             | Mask pixels to remove objects such as clouds or shadows     | :white_check_mark: |
 | PCA                       | Perform PCA analysis, transformation, and reconstruction    | :white_check_mark: |
-| MNF                       | Minimum Noise Transform                                     | :x:                |
+| MNF                       | Minimum Noise Fraction transformation and reconstruction    | :x:                |
 | Signature Analysis        | Visualize spectral signatures for provided land cover types | :white_check_mark: |
 | Land Cover Classification | Exposes an `MLJ` interface for classifying land cover types | :x:                |
 | Endmember Extraction      | Extract spectral endmembers from an image                   | :x:                |
