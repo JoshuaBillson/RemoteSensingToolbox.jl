@@ -18,6 +18,7 @@ end
 
 """
     blue(::Type{AbstractBandset})
+    blue(raster, ::Type{AbstractBandset})
 
 Return the blue band for the given sensor.
 """
@@ -25,6 +26,7 @@ blue(::Type{T}) where {T <: AbstractBandset} = error("Error: Band 'blue' not def
 
 """
     green(::Type{AbstractBandset})
+    green(raster, ::Type{AbstractBandset})
 
 Return the green band for the given sensor.
 """
@@ -32,6 +34,7 @@ green(::Type{T}) where {T <: AbstractBandset} = error("Error: Band 'green' not d
 
 """
     red(::Type{AbstractBandset})
+    red(raster, ::Type{AbstractBandset})
 
 Return the red band for the given sensor.
 """
@@ -39,6 +42,7 @@ red(::Type{T}) where {T <: AbstractBandset} = error("Error: Band 'red' not defin
 
 """
     nir(::Type{AbstractBandset})
+    nir(raster, ::Type{AbstractBandset})
 
 Return the nir band for the given sensor.
 """
@@ -46,6 +50,7 @@ nir(::Type{T}) where {T <: AbstractBandset} = error("Error: Band 'nir' not defin
 
 """
     swir1(::Type{AbstractBandset})
+    swir1(raster, ::Type{AbstractBandset})
 
 Return the swir1 band for the given sensor.
 """
@@ -53,6 +58,7 @@ swir1(::Type{T}) where {T <: AbstractBandset} = error("Error: Band 'swir1' not d
 
 """
     swir2(::Type{AbstractBandset})
+    swir2(raster, ::Type{AbstractBandset})
 
 Return the swir2 band for the given sensor.
 """
@@ -86,7 +92,7 @@ Read and decode the quality assurance mask for the given `AbstractBandset`.
 The decoded quality assurance mask as a `RasterStack`. Masked values are encoded as 1, non-masked values as 0, and missing values as 255.
 
 # Example
-```julia
+```julia-repl
 julia> qa = read_qa(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/")
 RasterStack with dimensions: 
   X Projected{Float64} LinRange{Float64}(493785.0, 728385.0, 7821) ForwardOrdered Regular Points crs: WellKnownText,

@@ -9,7 +9,7 @@ using Pipe: @pipe
 
 import CairoMakie: Figure, Axis, lines!, Legend, save, Makie.wong_colors, cgrad
 import RemoteSensingToolbox: align_rasters, efficient_read
-import ..Sensors: AbstractSensor, BandSet, Landsat8
+import ..Bandsets: AbstractBandset, wavelength, bands
 
 include("utils.jl")
 include("analysis.jl")

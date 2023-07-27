@@ -59,36 +59,31 @@ function labelled_signatures(rs::RasterStack, shp::DataFrame, label::Symbol)
     return df
 end
 
-function labelled_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol)
-    return labelled_signatures(rs.stack, shp, label)
-end
-
 """
-    plot_signatures(rs::AbstractSensor, shp::DataFrame, label::Symbol; colors=wong_colors())
-    plot_signatures(rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol; colors=wong_colors())
+    plot_signatures(bandset::Type{AbstractBandset}, rs::RasterStack, shp::DataFrame, label::Symbol; colors=wong_colors())
 
 Plot spectral signatures for each land cover type specified in a given shapefile.
 
 # Parameters
+- `bandset`: The sensor type to which the signatures belong.
 - `rs`: The `RasterStack` or `AbstractSensor` from which to extract spectral signatures.
 - `shp`: A shapefile stored as a `DataFrame` with a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
-- `bandset`: The `BandSet` for the provided sensor specifying the available bands and associated wavelengths in nm. Inferred for `AbstractSensor`.
 - `label`: The column in `shp` in which the land cover class is stored.
 - `colors`: The color scheme used by the plot.
 
 # Example
 ```julia
 # Read Landsat And Convert DNs To Reflectance
-landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance
+landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(_, Landsat8)
 
 # Load Shapefile
 shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 
 # Plot Signatures
-plot_signatures(landsat, shp, :C_name; colors=cgrad(:tab10))
+plot_signatures(Landsat8, landsat, shp, :C_name; colors=cgrad(:tab10))
 ```
 """
-function plot_signatures(rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol; colors=wong_colors())
+function plot_signatures(bandset::Type{<:AbstractBandset}, rs::RasterStack, shp::DataFrame, label::Symbol; colors=wong_colors())
     # Create Figure
     fig = Figure(resolution=(1000,500))
 
@@ -104,7 +99,7 @@ function plot_signatures(rs::RasterStack, shp::DataFrame, bandset::BandSet, labe
     )
     
     # Plot Signatures
-    plot_signatures!(ax, rs, shp, bandset, label; colors=colors)
+    plot_signatures!(bandset, ax, rs, shp, label; colors=colors)
 
     # Add Legend
     Legend(fig[1,2], ax, "Classification")
@@ -113,28 +108,23 @@ function plot_signatures(rs::RasterStack, shp::DataFrame, bandset::BandSet, labe
     return fig
 end
 
-function plot_signatures(rs::T, shp::DataFrame, label::Symbol; colors=wong_colors()) where {T <: AbstractSensor}
-    plot_signatures(rs.stack, shp, BandSet(T), label; colors=colors)
-end
-
 """
-    plot_signatures!(ax::Axis, rs::AbstractSensor, shp::DataFrame, label::Symbol; colors=wong_colors())
-    plot_signatures!(ax::Axis, rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol; colors=wong_colors())
+    plot_signatures!(::Type{AbstractBandset}, ax::Axis, rs::RasterStack, shp::DataFrame, label::Symbol; colors=wong_colors())
 
 Plot spectral signatures for each land cover type specified in a given shapefile by mutating a `Makie.Axis` object.
 
 # Parameters
+- `bandset`: The sensor type to which the signatures belong.
 - `ax`: The `Makie.Axis` into which we want to draw our plot.
 - `rs`: The `RasterStack` or `AbstractSensor` from which to extract spectral signatures.
 - `shp`: A shapefile stored as a `DataFrame` with a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
-- `bandset`: The `BandSet` for the provided sensor specifying the available bands and associated wavelengths in nm. Inferred for `AbstractSensor`.
 - `label`: The column in `shp` in which the land cover class is stored.
 - `colors`: The color scheme used by the plot.
 
 # Example
 ```julia
 # Read Landsat And Convert DNs To Reflectance
-landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance
+landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(_, Landsat8)
 
 # Load Shapefile
 shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
@@ -145,18 +135,15 @@ ax1 = Axis(fig[1,1]);
 ax2 = Axis(fig[2,1]);
 
 # Plot Signatures
-plot_signatures!(ax1, landsat, shp, :C_name; colors=cgrad(:tab10));
-plot_signatures!(ax2, landsat, shp, :MC_name; colors=cgrad(:tab10));
+plot_signatures!(Landsat8, ax1, landsat, shp, :C_name; colors=cgrad(:tab10))
+plot_signatures!(Landsat8, ax2, landsat, shp, :C_name; colors=cgrad(:tab10))
 
 # Add Legend
 Legend(fig[1,2], ax1);
 Legend(fig[2,2], ax2);
-
-# Save Figure
-save("landsat_signatures.png", fig)
 ```
 """
-function plot_signatures!(ax::Axis, rs::RasterStack, shp::DataFrame, bandset::BandSet, label::Symbol; colors=wong_colors())
+function plot_signatures!(bandset::Type{<:AbstractBandset}, ax::Axis, rs::RasterStack, shp::DataFrame, label::Symbol; colors=wong_colors())
     # Extract Signatures
     sigs = labelled_signatures(rs, shp, label)
 
@@ -164,14 +151,11 @@ function plot_signatures!(ax::Axis, rs::RasterStack, shp::DataFrame, bandset::Ba
     df = _summarize_signatures(mean, sigs, :label)
 
     # Plot Signatures
-    x = @pipe sigs[:,Not(:label)] |> names |> [bandset(b) for b in _]
+    bs = [b for b in bands(Landsat8) if b in Symbol.(names(sigs[:,Not(:label)]))]
+    x = [wavelength(bandset, b) for b in bs]
     for i in 1:DataFrames.nrow(df)
         lines!(ax, x, df[i,Not(:label)] |> Vector, label=df[i,:label], color=colors[i])
     end
 
     return ax
-end
-
-function plot_signatures!(ax::Axis, rs::T, shp::DataFrame, label::Symbol; colors=wong_colors()) where {T <: AbstractSensor}
-    plot_signatures!(ax, rs.stack, shp, BandSet(T), label; colors=colors)
 end

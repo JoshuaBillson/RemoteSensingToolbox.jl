@@ -6,28 +6,44 @@ CurrentModule = RemoteSensingToolbox
 
 [RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package intended to provide a collection of tools for visualizing, manipulating, and interpreting remotely sensed imagery.
 
-`RemoteSensingToolbox` provides a number of utilities for . First, lets load the imagery we want to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
 # Bandsets
 
-Bandsets are julia types that encode the sensor-specific information needed for many methods in `RemoteSensingToolbox` to work without the need for tedious details provided by the end user. 
+Bandsets are julia types that encode the sensor-specific information needed for many methods in `RemoteSensingToolbox` to work without the need for tedious details provided by the end user. Bandsets are provided for several common sensors including Sentinel-2, Landsat 7, and Landsat 8. Unsupported sensors can be added by defining a custom type, which should be a sub-type of `AbstractBandset`, and implementing the following interface:
 
-|                           |                                                                              |
-| :------------------------ | :--------------------------------------------------------------------------- |
-| `Base.getindex`           | return the layer correspinding to the given band name.                       |
-| `Base.length`             | return the number of layers in the enclosed `Rasters.RasterStack`.           |
-| `Base.map`                | apply a function to each layer in the enclosed `Rasters.RasterStack`.        |
-| `Base.write`              | write layers to file.                                                        |
-| `Rasters.resample`        | resample data to a different size and projection, or snap to another object. |
-| `Rasters.crop`            | shrink objects to specific dimension sizes or the extent of another object.  |
-| `Rasters.extend`          | extend objects to specific dimension sizes or the extent of another object.  |
-| `Rasters.trim`            | trims areas of missing values for arrays and across stack layers.            |
-| `Rasters.mask`            | mask an object by a polygon or Raster along X/Y, or other dimensions.        |
-| `Rasters.replace_missing` | replace all missing values in an object and update missingval.               |
+| **Method**                  | **Description**                                                                          | **Required**    |
+| :-------------------------- | :--------------------------------------------------------------------------------------- | :-------------: |
+| [`bands`](@ref)             | Return the band names in order from shortest to longest wavelength.                      | yes             |
+| [`wavelengths`](@ref)       | Return the central wavelengths for all bands from shortest to longest.                   | yes             |
+| [`blue`](@ref)              | Return the blue band for the given sensor.                                               | yes             |
+| [`green`](@ref)             | Return the green band for the given sensor.                                              | yes             |
+| [`red`](@ref)               | Return the red band for the given sensor.                                                | yes             |
+| [`nir`](@ref)               | Return the nir band for the given sensor.                                                | yes             |
+| [`swir1`](@ref)             | Return the swir1 band for the given sensor.                                              | yes             |
+| [`swir2`](@ref)             | Return the swir2 band for the given sensor.                                              | yes             |
+| [`parse_band`](@ref)        | Parses the band from a given filename. Used by [`read_bands`](@ref).                     | no              |
+| [`read_qa`](@ref)           | Reads the QA or scene classification file from the provided file or directory.           | no              |
+| [`dn_to_reflectance`](@ref) | Decodes digital numbers to reflectance.                                                  | no              |
 
-Additionally, [`asraster`](@ref) can be used to apply a function to the enclosed `Rasters.RasterStack`.
 
-```@autodocs
-Modules = [RemoteSensingToolbox.Sensors]
+```@docs
+AbstractBandset
+DESIS
+Landsat8
+Landsat7
+Sentinel2
+red
+green
+blue
+nir
+swir1
+swir2
+bands
+wavelengths
+wavelength
+parse_band
+read_bands
+read_qa
+dn_to_reflectance
 ```
 
 # Visualization
@@ -55,10 +71,12 @@ Pages = ["indices.jl"]
 
 ```@autodocs
 Modules = [RemoteSensingToolbox.Spectral]
+Private = false
 ```
 
 # Transformations
 
 ```@autodocs
 Modules = [RemoteSensingToolbox.Transformations]
+Private = false
 ```

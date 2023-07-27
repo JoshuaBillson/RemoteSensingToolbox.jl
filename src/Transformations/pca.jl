@@ -14,7 +14,7 @@ function Base.show(io::IO, ::MIME"text/plain", x::PCA)
     cv = @pipe round.(x.cumulative_variance[1:x.components], digits=4) |> string.(_) |> join(_, "  ")
     ev = @pipe round.(x.explained_variance[1:x.components], digits=4) |> string.(_) |> join(_, "  ")
     projection = round.(x.projection[:,1:x.components], digits=4)
-    println(io, "PCA(in_dim=$(size(projection, 1)), out_dim=$(size(projection, 2)), explained_variance=$(round(x.cumulative_variance[end], digits=4)))\n")
+    println(io, "PCA(in_dim=$(size(projection, 1)), out_dim=$(size(projection, 2)), explained_variance=$(round(x.cumulative_variance[x.components], digits=4)))\n")
     println(io, "Projection Matrix:")
     show(io, "text/plain", projection)
     println(io, "\n\nImportance of Components:")
@@ -22,17 +22,6 @@ function Base.show(io::IO, ::MIME"text/plain", x::PCA)
     print(io, "  Explained Variance: ", ev)
 end
 
-"""
-    fit_transform(transformation::Type{PCA}, raster; components=nbands(raster), method=:cov, stats_fraction=1.0)
-
-Fit a PCA transformation to the given raster.
-
-# Parameters
-- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a PCA transformation.
-- `components`: The number of principal components to use.
-- `method`: One of either `:cov` or `:cor`, depending on whether we want to run PCA on the covariance or the correlation matrix.
-- `stats_fraction`: The fraction of pixels to use in the calculation. Setting `stats_fraction < 1` will produce faster but less accurate results. 
-"""
 function fit_transform(::Type{PCA}, raster::Union{<:AbstractRasterStack, <:AbstractRaster}; components=nbands(raster), method=:cov, stats_fraction=1.0)
     # Check Arguments
     ((components < 1) || components > length(raster)) && throw(ArgumentError("`components` must be in the interval [1, length(stack)]!"))
@@ -72,15 +61,6 @@ function _fit(::Type{PCA}, data::Matrix, components, method, stats_fraction, ban
     return PCA(components, μ, pc, cumulative_var, explained_var, bands)
 end
 
-"""
-    transform(transformation::PCA, raster)
-
-Perform a PCA transformation to the given raster.
-
-# Parameters
-- `transformation`: The fitted `PCA` transformation to apply.
-- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a PCA transformation.
-"""
 function transform(transformation::PCA, raster::AbstractRasterStack; output_type=Float32)
     return transform(transformation, tocube(raster); output_type=output_type)
 end
@@ -111,10 +91,17 @@ function inverse_transform(transformation::PCA, raster::AbstractRaster; output_t
     # De-Centralize
     restored .+= Float32.(reshape(transformation.mean, (1, 1, :)))
 
+    # Write Results Into a Raster
     restored_raster = if output_type <: Integer
         _copy_dims(round.(output_type, restored), raster)
     else
         @pipe (eltype(restored) != output_type ? output_type.(restored) : restored) |> _copy_dims(_, raster)
+    end
+
+    # Mask Missing Values
+    restored_raster = rebuild(restored_raster, missingval=typemax(output_type))
+    for i in 1:size(raster, Rasters.Band)
+        mask!(restored_raster, with=view(raster, Rasters.Band(i)))
     end
 
     if isempty(transformation.bands)

@@ -28,15 +28,15 @@ include("Transformations/Transformations.jl")
 
 using .Transformations
 
-#include("Spectral/Spectral.jl")
+include("Spectral/Spectral.jl")
 
-#using .Spectral
+using .Spectral
 
 include("visualization.jl")
 
 # Export Bandsets
 export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS
-export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance
+export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance, parse_band
 
 # Export visualization
 export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
@@ -45,7 +45,7 @@ export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 # Export Spectral
-#export labelled_signatures, plot_signatures, plot_signatures!
+export labelled_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
 export tocube, create_tiles, mask_pixels, mask_pixels!

@@ -9,49 +9,27 @@ import Tables
 import RemoteSensingToolbox: align_rasters, efficient_read
 
 """
-The supertype of all BandSet types. 
+The supertype of all sensor types. Provides sensor-specific information to many `RemoteSensingToolbox` methods.
 
-Subtypes should wrap a RasterStack and implement the following interface:
-
-    bands(::Type{<:Bandset})
-
-    wavelengths(::Type{<:Bandset})
-
-    blue(X::BandSet)
-
-    green(X::BandSet)
-
-    red(X::BandSet) 
-
-    nir(X::BandSet) 
-
-    swir1(X::BandSet)
-
-    swir2(X::BandSet)
-
-# Example Implementation
+# Example Minimal Implementation
 ```julia
-struct Landsat8{T} <: AbstractBandset{T}
-    stack::T
-end
+struct Landsat8 <: AbstractBandset end
 
-unwrap(X::Landsat8) = X.stack
+bands(::Type{Landsat8}) = [:B1, :B2, :B3, :B4, :B5, :B6, :B7]
 
-bands(::Type{<:Landsat8}) = [:B1, :B2, :B3, :B4, :B5, :B6, :B7]
+wavelengths(::Type{Landsat8}) = [443, 483, 560, 660, 865, 1650, 2220]
 
-wavelengths(::Type{<:Landsat8}) = [443, 483, 560, 660, 865, 1650, 2220]
+blue(::Type{Landsat8}) = :B2
 
-blue(X::Landsat8) = X[:B2]
+green(::Type{Landsat8}) = :B3
 
-green(X::Landsat8) = X[:B3]
+red(::Type{Landsat8}) = :B4
 
-red(X::Landsat8) = X[:B4]
+nir(::Type{Landsat8}) = :B5
 
-nir(X::Landsat8) = X[:B5]
+swir1(::Type{Landsat8}) = :B6
 
-swir1(X::Landsat8) = X[:B6]
-
-swir2(X::Landsat8) = X[:B7]
+swir2(::Type{Landsat8}) = :B7
 ```
 """
 abstract type AbstractBandset end
@@ -69,6 +47,31 @@ function wavelength(::Type{T}, band::Symbol) where {T <: AbstractBandset}
     return @pipe findfirst(isequal(band), bands(T)) |> wavelengths(T)[_]
 end
 
+"""
+    function read_bands(bandset::Type{AbstractBandset}, dir::String)
+
+Read the bands from the given directory into a `RasterStack`.
+
+# Parameters
+- `bandset`: The sensor type to which the bands belong.
+- `dir`: The directory in which the bands can be read.
+
+# Example
+```julia-repl
+julia> landsat = read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/")
+RasterStack with dimensions: 
+  X Projected{Float64} LinRange{Float64}(493785.0, 728385.0, 7821) ForwardOrdered Regular Points crs: WellKnownText,
+  Y Projected{Float64} LinRange{Float64}(5.84638e6, 5.60878e6, 7921) ReverseOrdered Regular Points crs: WellKnownText
+and 7 layers:
+  :B1 UInt16 dims: X, Y (7821×7921)
+  :B2 UInt16 dims: X, Y (7821×7921)
+  :B3 UInt16 dims: X, Y (7821×7921)
+  :B4 UInt16 dims: X, Y (7821×7921)
+  :B5 UInt16 dims: X, Y (7821×7921)
+  :B6 UInt16 dims: X, Y (7821×7921)
+  :B7 UInt16 dims: X, Y (7821×7921)
+```
+"""
 function read_bands(::Type{T}, dir::String) where {T <: AbstractBandset}
     # Parse Bands From Files
     files = readdir(dir, join=true)
@@ -99,6 +102,6 @@ include("sentinel2.jl")
 include("DESIS.jl")
 
 export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS
-export red, green, blue, nir, swir1, swir2, bands,wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance
+export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, parse_band, read_bands, read_qa, dn_to_reflectance
 
 end

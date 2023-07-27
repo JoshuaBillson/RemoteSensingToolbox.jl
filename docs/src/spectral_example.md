@@ -2,7 +2,7 @@
 CurrentModule = RemoteSensingToolbox
 ```
 
-# Spectral Analysis Example
+# Spectral Analysis
 
 A common application of remotely sensed imagery is land cover classification. One method to accomplish this is to analyze the spectral signatures produced by different types of cover. `RemoteSensingToolbox` provides a number of functions for extracting and visualyzing spectral signatures organized by their associated lan cover.
 

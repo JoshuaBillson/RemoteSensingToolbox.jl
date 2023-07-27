@@ -1,6 +1,6 @@
 "Return the number of bands in a raster."
 function nbands(raster::AbstractRaster)
-    return any(isa.(dims(c), Rasters.Band)) ? size(raster, Rasters.Band) : 1
+    return any(isa.(dims(raster), Rasters.Band)) ? size(raster, Rasters.Band) : 1
 end
 
 function nbands(raster::AbstractRasterStack)

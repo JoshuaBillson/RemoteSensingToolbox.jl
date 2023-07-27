@@ -2,7 +2,7 @@
 CurrentModule = RemoteSensingToolbox
 ```
 
-# Quickstart Example
+# Quick Start
 
 `RemoteSensingToolbox` provides a number of utilities for visualizing, manipulating, and interpreting remotely sensed imagery. First, lets load the imagery we want to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
 

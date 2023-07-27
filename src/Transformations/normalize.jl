@@ -14,14 +14,6 @@ function Base.show(io::IO, ::MIME"text/plain", x::Normalize)
     print(io, "  σ: ", σ)
 end
 
-"""
-    fit_transform(transformation::Type{Normalize}, raster)
-
-Fit a PCA transformation to the given raster.
-
-# Parameters
-- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a normalization transformation.
-"""
 function fit_transform(::Type{Normalize}, raster::AbstractRasterStack)
     stats = map(keys(raster)) do layer
         x = raster[layer]
@@ -36,15 +28,6 @@ function fit_transform(::Type{Normalize}, raster::AbstractRaster)
     return fit(Normalize, RasterStack(raster, layersfrom=Rasters.Band))
 end
 
-"""
-    transform(transformation::Normalize, raster)
-
-Perform a PCA transformation to the given raster.
-
-# Parameters
-- `transformation`: The fitted `Normalize` transformation to apply.
-- `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform a normalization transformation.
-"""
 function transform(transformation::Normalize, raster::AbstractRasterStack)
     i = 0
     map(raster) do x
