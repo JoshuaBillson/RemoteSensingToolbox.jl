@@ -6,7 +6,7 @@ function main()
     landsat = read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/")
 
     # Convert DN to Reflectance
-    landsat_sr = dn_to_reflectance(landsat, Landsat8)
+    landsat_sr = dn_to_reflectance(Landsat8, landsat)
 
     # Show True Color Composite
     @pipe visualize(landsat_sr, TrueColor{Landsat8}; upper=0.90) |> Images.imresize(_, ratio=0.2) |> Images.save("true_color.png", _)

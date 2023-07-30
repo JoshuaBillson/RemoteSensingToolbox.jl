@@ -10,8 +10,9 @@ The first step in our analysis is to load our remotely sensed data and convert t
 
 ```julia
 using RemoteSensingToolbox, DataFrames, Shapefile, CairoMakie
+using Pipe: @pipe
 
-landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance
+landsat = @pipe Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(Landsat8, _)
 ```
 
 Next, we need to load a shapefile which defines some regions containing each type of land cover that we're interested in.
@@ -58,8 +59,8 @@ The `plot_signatures!` method is nearly identical to `plot_signatures`, but it e
 
 ```julia
 # Load Sentinel and DESIS
-sentinel = Sentinel2A("data/T11UPT_20200804T183919/") |> dn_to_reflectance
-desis = DESIS("data/DESIS-HSI-L2A-DT0483531728_001-20200804T234520-V0210/SPECTRAL_IMAGE.tif") |> dn_to_reflectance
+sentinel = @pipe Sentinel2A("data/T11UPT_20200804T183919/") |> dn_to_reflectance(Sentinel2, _)
+desis = @pipe DESIS("data/DESIS-HSI-L2A-DT0483531728_001-20200804T234520-V0210/SPECTRAL_IMAGE.tif") |> dn_to_reflectance(DESIS, _)
 sensors = [landsat, sentinel, desis]
 
 # Create Figure

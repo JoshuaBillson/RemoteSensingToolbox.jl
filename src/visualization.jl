@@ -76,15 +76,17 @@ function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
     return _linear_stretch(g, lower, upper) |> _raster_to_image
 end
 
-function plot_mask(mask, classes)
+function plot_mask(mask, classes, figure=(;), legend=(;))
+    # Create Color Gradient
+    colors = CairoMakie.cgrad(:viridis, length(classes), categorical=true)
+
     # Create Plot
-    fig, ax, plt = CairoMakie.plot(mask)
+    fig, ax, plt = CairoMakie.heatmap(mask, colormap=colors, figure=figure);
     CairoMakie.hidedecorations!(ax)
 
     # Create Legend
-    colors = CairoMakie.cgrad(:viridis, length(classes), categorical=true)
     elements = [CairoMakie.PolyElement(color=color, strokecolor=:transparent) for color in colors]
-    CairoMakie.Legend(fig[1,2], elements, classes, "Legend")
+    CairoMakie.Legend(fig[1,2], elements, classes, "Legend", legend...)
 
     return fig
 end

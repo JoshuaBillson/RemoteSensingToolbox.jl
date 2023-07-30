@@ -1,8 +1,9 @@
 using RemoteSensingToolbox, DataFrames, Shapefile, CairoMakie
+using Pipe: @pipe
 
 function main()
     # Read Landsat And Convert DNs To Reflectance
-    landsat = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance
+    landsat = @pipe Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(Landsat8, _)
 
     # Load Shapefile
     shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
@@ -21,8 +22,8 @@ function main()
     CairoMakie.save("landsat_sigs_metaclass.png", fig3)
 
     # Load Sentinel and DESIS
-    sentinel = Sentinel2A("data/T11UPT_20200804T183919/") |> dn_to_reflectance
-    desis = DESIS("data/DESIS-HSI-L2A-DT0483531728_001-20200804T234520-V0210/SPECTRAL_IMAGE.tif") |> dn_to_reflectance
+    sentinel = @pipe Sentinel2A("data/T11UPT_20200804T183919/") |> dn_to_reflectance(Sentinel2, _)
+    desis = DESIS("data/DESIS-HSI-L2A-DT0483531728_001-20200804T234520-V0210/SPECTRAL_IMAGE.tif") |> dn_to_reflectance(DESIS, _)
     sensors = [landsat, sentinel, desis]
 
     # Create Figure

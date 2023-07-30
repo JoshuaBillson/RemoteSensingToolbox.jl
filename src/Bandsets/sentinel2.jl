@@ -30,14 +30,18 @@ function parse_band(::Type{Sentinel2}, filename::String)
 end
 
 function read_qa(::Type{Sentinel2}, src::String)
-    if isdir(src)
+    # Read SCL Mask Into Raster
+    raster = if isdir(src)
         files = readdir(src, join=true)
-        reg = BEGIN * zero_or_more(ANY) * "QA_PIXEL." * either("TIF", "tif", "jp2") * END
-        return @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string |> Raster |> _parse_landsat_qa
+        reg = BEGIN * zero_or_more(ANY) * "SCL_" * either("60m", "20m", "10m") * "." * either("TIF", "tif", "jp2") * END
+        @pipe map(x -> match(reg, x), files) |> filter(x -> !isnothing(x), _) |> first |> _.match |> string |> Raster(_, missingval=0x00)
+    else
+        Raster(src, missingval=0x00)
     end
-    return Raster(src) |> _parse_landsat_qa
-end
 
-function dn_to_reflectance(stack::AbstractRasterStack, ::Type{Sentinel2}; clamp_values=false)
-    return map(x -> _decode_dn(x, 0.0001, 0.0; clamp_values), stack)
+    # Decode SCL Bits
+    rasters = [ifelse.(raster .== i, 0x01, 0x00) for i in 3:11]
+
+    # Return RasterStack
+    return RasterStack(rasters..., name=(:cloud_shadow, :vegetation, :soil, :water, :clouds_low, :clouds_med, :clouds_high, :cirrus, :snow))
 end

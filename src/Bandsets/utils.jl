@@ -38,13 +38,17 @@ function _decode_dn(raster::AbstractRaster, scale::Float32, offset::Float32; cla
     clamp_values && clamp!(reflectance, 0.0f0, 1.0f0)
 
     # Mask Missing Pixels
-    mask!(reflectance; with=raster, missingval=-Inf32)
+    mask!(reflectance; with=raster, missingval=Inf32)
 
     # Set Missing Value
-    rebuild(reflectance, missingval=-Inf32)
+    rebuild(reflectance, missingval=Inf32)
 end
 
-function _decode_dn(raster::AbstractRaster, scale, offset; kwargs...)
+function _decode_dn(raster::AbstractRasterStack, scale::Float32, offset::Float32; kwargs...)
+    return map(x -> _decode_dn(x, Float32(scale), Float32(offset); kwargs...), raster)
+end
+
+function _decode_dn(raster, scale, offset; kwargs...)
     return _decode_dn(raster, Float32(scale), Float32(offset); kwargs...)
 end
 

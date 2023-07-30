@@ -63,7 +63,7 @@ visualize(landsat, Agriculture{Landsat8}; upper=0.90)
 We can also convert Digital Numbers (DNs) to reflectance by calling `dn_to_reflectance` and passing in the appropriate bandset.
 
 ```julia
-landsat_sr = dn_to_reflectance(landsat, Landsat8)
+landsat_sr = dn_to_reflectance(Landsat8, landsat)
 ```
 
 We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.

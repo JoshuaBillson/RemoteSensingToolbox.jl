@@ -30,6 +30,6 @@ function read_qa(::Type{Landsat8}, src::String)
     return Raster(src) |> _parse_landsat_qa
 end
 
-function dn_to_reflectance(stack::AbstractRasterStack, ::Type{Landsat8}; clamp_values=false)
-    return map(x -> _decode_dn(x, 0.0000275, -0.2; clamp_values), stack)
+function dn_to_reflectance(::Type{Landsat8}, raster; clamp_values=false)
+    return _decode_dn(raster, 0.0000275f0, -0.2f0; clamp_values=clamp_values)
 end

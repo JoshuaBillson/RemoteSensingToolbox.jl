@@ -110,21 +110,21 @@ and 7 layers:
 read_qa(::Type{T}, src::String) where {T <: AbstractBandset} = error("Error: 'read_qa' not defined for $(T)!")
 
 """
-    dn_to_reflectance(stack::AbstractRasterStack, bandset::Type{AbstractBandset}; clamp_values=false)
+    dn_to_reflectance(bandset::Type{AbstractBandset}, raster; clamp_values=false)
 
 Transform the raster from Digital Numbers (DN) to reflectance.
 
 # Parameters
-- `stack`: The `AbstractRasterStack` to be converted to reflectance.
 - `bandset`: A subtype of `AbstractBandset`.
+- `raster`: The `AbstractRasterStack` or `AbstractRaster` to be converted to reflectance.
 - `clamp_values`: Indicates whether to clamp reflectances into the range (0.0, 1.0] (default = false).
 
 # Example
 ```julia
 landsat = read(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
-landsat_sr = dn_to_reflectance(landsat, Landsat8)
+landsat_sr = dn_to_reflectance(Landsat8, landsat)
 ```
 """
-function dn_to_reflectance(stack::AbstractRasterStack, ::Type{T}; clamp_values=false) where {T <: AbstractBandset}
-    error("Error: 'dn_to_reflectance' not defined for $(T)!")
+function dn_to_reflectance(::Type{T}, raster; clamp_values=false) where {T <: AbstractBandset}
+    return _decode_dn(raster, 0.0001f0, 0.0f0; clamp_values=clamp_values)
 end
