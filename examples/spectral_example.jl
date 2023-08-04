@@ -47,4 +47,4 @@ function main()
     CairoMakie.save("multisensor_sigs.png", fig3)
 end
 
-#main()
+main()
