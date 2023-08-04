@@ -1,21 +1,30 @@
-function _summarize_signatures(f, sigs::DataFrame, label::Symbol)
-    @pipe DataFrames.groupby(sigs, label) |> DataFrames.combine(_, DataFrames.Not(label) .=> f)
+function _rasterize(shp, to, fill)
+    Rasters.rasterize(last, shp, to=to, fill=fill, verbose=false, progress=false)
 end
 
-function _extract_signatures(stack, shp, row)
-    # Large Stacks
-    if length(names(stack)) > 25 
-        # Partition Stack Layers Into Chunks of 25
-        stacks = [RasterStack([stack[c] for c in part]...) for part in Iterators.partition(names(stack), 25)]
+function _sort_signature(bandset::Type{<:AbstractBandset}, reflectances::Vector{<:Number}, bands::Vector{Symbol})
+    sorted = @pipe zip(wavelength.(bandset, bands), reflectances) |> collect |> sort(_, by=first)
+    return (first.(sorted), last.(sorted))
+end
 
-        # Extract Signatures From Each Chunk
-        ops = [_extract_signatures(stack, shp, row) for stack in stacks]
+function _plot_signatures!(ax, bandset::Type{<:AbstractBandset}, sigs::Matrix{<:AbstractFloat}, bands::Vector{Symbol}, labels; colors=wong_colors(), kwargs...)
+    # Check Arguments
+    (size(sigs, 2) != length(bands)) && ArgumentError("Length of signatures ($(size(sigs, 2))) must be equal to number of bands ($(length(bands)))!")
+    (size(sigs, 1) != length(labels)) && ArgumentError("Number of signatures ($(size(sigs, 1))) must be equal to number of labels ($(length(labels)))")
 
-        # Merge Results
-        return reduce(hcat, ops)
-
-    # Small Stacks
-    else
-        return @pipe extract(stack, shp[row,:geometry]) |> DataFrame |> _[:,Not(:geometry)]
+    # Plot Signatures
+    for i in 1:size(sigs,1)
+        _plot_signature!(ax, bandset, sigs[i,:], bands, label=labels[i]; color=colors[i], kwargs...)
     end
+end
+
+function _plot_signature!(ax, bandset::Type{<:AbstractBandset}, signature::Vector{<:AbstractFloat}, bands::Vector{Symbol}; kwargs...)
+    # Check Arguments
+    (length(signature) != length(bands)) && ArgumentError("Length of signatures ($(length(sigs))) must be equal to number of bands ($(length(bands)))!")
+
+    # Sort Bands In Ascending Order
+    x, y = _sort_signature(bandset, signature, bands)
+
+    # Plot Signature
+    lines!(ax, x, y; kwargs...)
 end

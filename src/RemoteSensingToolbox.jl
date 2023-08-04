@@ -45,7 +45,7 @@ export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 # Export Spectral
-export labelled_signatures, plot_signatures, plot_signatures!
+export extract_signatures, summarize_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
 export tocube, create_tiles, mask_pixels, mask_pixels!

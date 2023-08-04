@@ -37,7 +37,8 @@ function _raster_to_df(raster::AbstractRasterStack)
 end
 
 function _raster_to_df(raster::AbstractRaster)
-    return _raster_to_df(RasterStack(raster, layersfrom=Rasters.Band))
+    stack = any(isa.(dims(raster), Rasters.Band)) ? RasterStack(raster, layersfrom=Rasters.Band) : RasterStack(raster)
+    return _raster_to_df(stack)
 end
 
 function _drop_nan(raster)

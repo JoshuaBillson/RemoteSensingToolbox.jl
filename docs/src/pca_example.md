@@ -31,7 +31,9 @@ pca_full = fit_transform(PCA, sentinel, method=:cov)
 ```
 ```julia
 PCA(in_dim=11, out_dim=11, explained_variance=1.0)
+```
 
+```
 Projection Matrix:
 11×11 Matrix{Float64}:
  -0.026   -0.2068  -0.359    0.312   -0.0955  -0.4791   0.2245  -0.6117   0.1862  -0.1494   0.1005
@@ -58,7 +60,9 @@ pca = fit_transform(PCA, sentinel, components=3)
 ```
 ```julia
 PCA(in_dim=11, out_dim=3, explained_variance=0.989)
+```
 
+```
 Projection Matrix:
 11×3 Matrix{Float64}:
  -0.026   -0.2068  -0.359

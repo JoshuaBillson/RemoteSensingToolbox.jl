@@ -51,6 +51,7 @@ dn_to_reflectance
 ```@autodocs
 Modules = [RemoteSensingToolbox]
 Pages = ["visualization.jl"]
+Private = false
 ```
 
 # Preprocessing
@@ -58,6 +59,7 @@ Pages = ["visualization.jl"]
 ```@autodocs
 Modules = [RemoteSensingToolbox]
 Pages = ["preprocessing.jl"]
+Private = false
 ```
 
 # Land Cover Indices
@@ -65,6 +67,7 @@ Pages = ["preprocessing.jl"]
 ```@autodocs
 Modules = [RemoteSensingToolbox]
 Pages = ["indices.jl"]
+Private = false
 ```
 
 # Spectral Analysis

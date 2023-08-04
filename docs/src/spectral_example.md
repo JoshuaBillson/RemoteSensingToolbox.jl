@@ -38,10 +38,30 @@ Examining the shapefile gives us some idea of how its contents are structured. A
    8 │ Polygon(5 Points)   missing      3  Bare Earth      6  Bare Earth  20230527_125120033074_286
 ```
 
-To visualize the spectral signatures of each type of land cover, we can call `plot_signatures` on the raster from which we want to extract the signatures, the shapefile defining the regions of interest, and the column which specifies the class of each polygon. We should note that `plot_signatures` also expects a `BandSet` defining the sensor's bands and corresponding central wavelength. However, this information is determined implicitly for `AbstractSensor` types.
+We can extract the signatures inside each polygon with `extract_signatures`, then compute the average of each land cover class with `summarize_signatures`.
 
 ```julia
-plot_signatures(landsat, shp, :C_name)
+sigs = extract_signatures(landsat, shp, :C_name) |> summarize_signatures
+```
+
+```
+7×8 DataFrame
+ Row │ label       B1           B2          B3         B4          B5        B6          B7         
+     │ String      Float32      Float32     Float32    Float32     Float32   Float32     Float32    
+─────┼──────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ Hail Scar   0.0617346    0.107954    0.188092   0.247114    0.508847  0.322815    0.173574
+   2 │ Bare Earth  0.0483927    0.0539072   0.0773476  0.0883738   0.231219  0.307681    0.199805
+   3 │ Road        0.0396956    0.0530674   0.0933762  0.0952315   0.245672  0.205506    0.142639
+   4 │ Lake        0.000517442  0.00360272  0.0132789  0.00628491  0.031176  0.00697667  0.00377249
+   5 │ Trees       0.0182846    0.0204864   0.0404257  0.0245542   0.319328  0.139772    0.0585171
+   6 │ Vegetation  0.00442494   0.015797    0.0789011  0.0464686   0.49601   0.0964562   0.0407997
+   7 │ Built Up    0.0892711    0.118764    0.177746   0.200785    0.293111  0.33917     0.304133
+```
+
+Finally, we can visualize the signatures as a line graph with `plot_signatures`.
+
+```julia
+plot_signatures(Landsat8, sigs)
 ```
 
 ![](figures/landsat_sigs_wong.png)
@@ -49,7 +69,7 @@ plot_signatures(landsat, shp, :C_name)
 We see that we've plotted the signatures for each land cover type in `shp`. However, we may wish to override the default colors. Fortunately, `plot_signatures` accepts an optional argument allowing us to specify any colors that we wish.
 
 ```julia
-plot_signatures(landsat, shp, :C_name; colors=cgrad(:tab10))
+plot_signatures(Landsat8, sigs; colors=cgrad(:tab10))
 ```
 
 ![](figures/landsat_sigs_tab10.png)
@@ -59,23 +79,23 @@ The `plot_signatures!` method is nearly identical to `plot_signatures`, but it e
 
 ```julia
 # Load Sentinel and DESIS
-sentinel = @pipe Sentinel2A("data/T11UPT_20200804T183919/") |> dn_to_reflectance(Sentinel2, _)
-desis = @pipe DESIS("data/DESIS-HSI-L2A-DT0483531728_001-20200804T234520-V0210/SPECTRAL_IMAGE.tif") |> dn_to_reflectance(DESIS, _)
+sentinel = @pipe read_bands(Sentinel2, "data/T11UPT_20200804T183919/R60m/") |> dn_to_reflectance(Sentinel2, _)
+desis = @pipe read_bands(DESIS, "data/DESIS-HSI-L2A-DT0884573241_001-20200601T234520-V0210") |> dn_to_reflectance(DESIS, _)
 sensors = [landsat, sentinel, desis]
 
 # Create Figure
 fig = Figure(resolution=(1000, 800))
 
 # Create Axes
-ax1 = Axis(fig[1,1], xticksvisible=false, xticklabelsvisible=false)
-ax2 = Axis(fig[2,1], ylabel="Reflectance", ylabelfont=:bold, xticksvisible=false, xticklabelsvisible=false)
-ax3 = Axis(fig[3,1], xlabel="Wavelength (nm)", xlabelfont=:bold)
+ax1 = Axis(fig[1,1], title="Landsat 8", xticksvisible=false, xticklabelsvisible=false)
+ax2 = Axis(fig[2,1], title="Sentinel 2", ylabel="Reflectance", ylabelfont=:bold, xticksvisible=false, xticklabelsvisible=false)
+ax3 = Axis(fig[3,1], title="DESIS", xlabel="Wavelength (nm)", xlabelfont=:bold)
 axs = [ax1, ax2, ax3]
 
 # Plot Signatures
-colors = cgrad([:orange, :green, :saddlebrown, :navy], 4, categorical=true)
-for (sensor, ax) in zip(sensors, axs)
-   plot_signatures!(ax, sensor, shp, :MC_name; colors=colors)
+colors = cgrad([:saddlebrown, :orange, :navy, :green], 4, categorical=true)
+for (bandset, sensor, ax) in zip((Landsat8, Sentinel2, DESIS), sensors, axs)
+   @pipe extract_signatures(sensor, shp, :MC_name) |> summarize_signatures |> plot_signatures!(ax, bandset, _; colors=colors)
    xlims!(ax, 400, 1000)
 end
 
