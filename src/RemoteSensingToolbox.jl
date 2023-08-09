@@ -1,9 +1,11 @@
 module RemoteSensingToolbox
 
 import ArchGDAL
-import Images
+import ImageCore
 import CairoMakie
-import DataFrames
+import Tables
+import TableOperations
+using OrderedCollections
 using Rasters
 using Statistics
 using DocStringExtensions
@@ -11,6 +13,8 @@ using ReadableRegex
 using Pipe: @pipe
 
 include("utils.jl")
+
+include("raster_table.jl")
 
 #include("Utils/Utils.jl")
 
@@ -33,6 +37,9 @@ include("Spectral/Spectral.jl")
 using .Spectral
 
 include("visualization.jl")
+
+# Export RasterTable
+export RasterTable, dropmissing!, dropmissing, layers, cols, nonmissing, transform_column!, fold_rows
 
 # Export Bandsets
 export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS

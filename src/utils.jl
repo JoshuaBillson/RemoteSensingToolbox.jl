@@ -31,16 +31,6 @@ function _copy_dims(data::AbstractArray{<:Number,2}, reference::AbstractRaster)
     return Raster(data; crs=crs(reference), dims=ref_dims)
 end
 
-function _raster_to_df(raster::AbstractRasterStack)
-    data = [reshape(replace_missing(raster[layer]).data, :) for layer in names(raster)]
-    return DataFrames.DataFrame(data, collect(names(raster)))
-end
-
-function _raster_to_df(raster::AbstractRaster)
-    stack = any(isa.(dims(raster), Rasters.Band)) ? RasterStack(raster, layersfrom=Rasters.Band) : RasterStack(raster)
-    return _raster_to_df(stack)
-end
-
 function _drop_nan(raster)
     return ifelse.(isnan.(raster), missingval(raster), raster)
 end

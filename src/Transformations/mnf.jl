@@ -22,8 +22,35 @@ function Base.show(io::IO, ::MIME"text/plain", x::MNF)
     print(io, "  Explained Variance: ", ev)
 end
 
-function _compute_ncm(img)
-    return  @pipe (@view img[1:end-1, 1:end-1, :]) .- (@view img[2:end,2:end,:]) |> reshape(_, (:, 235)) |> cov
+function _compute_diff(raster::AbstractRaster; smooth=false)
+    # Extract (1, 1) Offset Views
+    width = size(raster, Rasters.X)
+    height = size(raster, Rasters.Y)
+    r1 = @view raster[Rasters.X(1:width-1), Rasters.Y(1:height-1)]
+    r2 = @view raster[Rasters.X(2:width), Rasters.Y(2:height)]
+
+    # Prepare Smoothing Term
+    t = eltype(raster)
+    s = size(r1)
+    smoothing = smooth ? (t <: Integer ? rand(t.([0, 1]), s) : rand(t.([0.0, 0.0001]), s)) : zeros(t, s)
+
+    # Compute Diff
+    diff = r1 .- r2
+    diff .+= smoothing
+
+    # Mask Missing values
+    Rasters.mask!(diff, with=r1)
+    Rasters.mask!(diff, with=r2)
+end
+
+function _compute_diff(raster::AbstractRasterStack; smooth=false)
+    return map(x -> _compute_diff(x, smooth=smooth), raster)
+end
+
+function _compute_ncm(raster; smooth=false)
+    Σ = _compute_diff(raster, smooth=smooth) |> RasterTable |> dropmissing |> Tables.matrix |> cov
+    Σ .*= eltype(Σ)(0.5)
+    return Σ
 end
 
 function fit_transform(::Type{MNF}, raster::Union{<:AbstractRasterStack, <:AbstractRaster}; components=nbands(raster), method=:cov, stats_fraction=1.0)
@@ -33,7 +60,7 @@ function fit_transform(::Type{MNF}, raster::Union{<:AbstractRasterStack, <:Abstr
     ((stats_fraction <= 0) || (stats_fraction > 1)) && throw(ArgumentError("`stats_fraction` must in the interval (0, 1]!"))
 
     # Prepare Data For Statistics
-    data = _raster_to_df(raster) |> dropmissing! |> Matrix
+    data = RasterTable(raster) |> dropmissing |> matrix
 
     # Fit MNF
     bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]

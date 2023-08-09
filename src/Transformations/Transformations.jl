@@ -1,14 +1,14 @@
 module Transformations
 
 using Rasters
-using DataFrames
 using DocStringExtensions
 using Statistics
 using Pipe: @pipe
 
+import Tables
 import Random
 import LinearAlgebra
-import RemoteSensingToolbox: _copy_dims, tocube, _map_index, _raster_to_df, _copy_dims, nbands
+import RemoteSensingToolbox: _copy_dims, tocube, _map_index, _copy_dims, nbands, RasterTable, dropmissing
 
 """
 The supertype of all transformations. Subtypes are expected to implement the `fit` and `transform` methods.
@@ -86,6 +86,7 @@ inverse_transform(transformation::T, raster, kwargs...) where {T <: AbstractTran
 include("utils.jl")
 include("normalize.jl")
 include("pca.jl")
+include("mnf.jl")
 
 export AbstractTransformation, Normalize, PCA, fit_transform, transform, inverse_transform
 

@@ -1,15 +1,16 @@
 """
-    extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; label_name=nothing)
+    extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; drop_missing=false)
 
-Extract signatures from the given `RasterStack` or `AbstractSensor` within regions specified by a given shapefile.
+Extract signatures from the given `RasterStack` within regions specified by a provided shapefile.
 
 # Parameters
 - `stack`: The `RasterStack` from which to extract spectral signatures.
 - `shp`: A `Tables.jl` compatible object containing a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
-- `label`: The column in `shp` in which the land cover class is stored.
+- `label`: The column in `shp` corresponding to the land cover type.
+- 'drop_missing': Drop all rows with at least one missing value in either the bands or labels (default = true).
 
 # Returns
-A `DataFrame` consisting of rows for each extracted signature and columns storing the respective bands and land cover type.
+A `RasterTable` consisting of rows for each observed signature and columns storing the respective bands and land cover type.
 
 # Example
 ```julia-repl
@@ -17,7 +18,7 @@ julia> landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_2020
 
 julia> shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 
-julia> extract_signatures(landsat, shp, :C_name)
+julia> extract_signatures(landsat, shp, :C_name) |> DataFrame
 1925×8 DataFrame
   Row │ B1         B2         B3        B4        B5        B6        B7        label     
       │ Float32    Float32    Float32   Float32   Float32   Float32   Float32   String    
@@ -36,79 +37,39 @@ julia> extract_signatures(landsat, shp, :C_name)
                                                                          1915 rows omitted
 ```
 """
-function extract_signatures(stack::AbstractRasterStack, shp, label::Symbol)
+function extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; drop_missing=true)
     # Prepare Labels
     labels = shp[:,label]
     fill_to_label = Set(labels) |> enumerate |> Dict
     label_to_fill = Set(labels) |> enumerate .|> reverse |> Dict
 
     # Crop Raster To Extent Of Labels
-    stack = map(x -> Rasters.crop(x, to=shp), stack)
+    stack = drop_missing ? map(x -> Rasters.crop(x, to=shp) |> copy, stack) : stack
 
     # Rasterize Labels
     fill_vals = [label_to_fill[label] for label in labels]
     labels = rebuild(_rasterize(shp, stack, fill_vals), name=:label)
 
     # Pair Signatures With Labels
-    df = hcat(_raster_to_df(stack), _raster_to_df(labels)) |> dropmissing!
+    table = RasterTable(stack, labels)
+
+    # Drop Missing
+    table = drop_missing ? dropmissing(table) : table
 
     # Add Label Names
-    df.label = [fill_to_label[x] for x in df.label]
-    return df
+    return transform_column(x -> fill_to_label[x], table, :label)
 end
 
 """
-    summarize_signatures([reducer], sigs::DataFrame, [label])
-
-Summarize a collection of spectral signatures by grouping according to their land cover type, then reducing each group to a single summary statistic.
-
-# Parameters
-- `reducer`: A function that reduces a collection of values to a single statistic (defaults to `mean`).
-- `sigs`: A `DataFrame` of signatures, where each row contains the band measurements for a single pixel and the corresponding land cover type.
-- `label`: The column in `sigs` which stores the land cover type (default is `:label`).
-
-# Returns
-A `DataFrame` consisting of rows for each land cover type's summarized signature.
-
-# Example
-```julia-repl
-julia> landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(Landsat8, _)
-
-julia> shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
-
-julia> sigs = extract_signatures(landsat, shp, :C_name)
-
-julia> summarize_signatures(sigs, :label)
-7×8 DataFrame
- Row │ label       B1           B2          B3         B4          B5        B6          B7         
-     │ String      Float32      Float32     Float32    Float32     Float32   Float32     Float32    
-─────┼──────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ Hail Scar   0.0617346    0.107954    0.188092   0.247114    0.508847  0.322815    0.173574
-   2 │ Bare Earth  0.0483927    0.0539072   0.0773476  0.0883738   0.231219  0.307681    0.199805
-   3 │ Road        0.0396956    0.0530674   0.0933762  0.0952315   0.245672  0.205506    0.142639
-   4 │ Lake        0.000517442  0.00360272  0.0132789  0.00628491  0.031176  0.00697667  0.00377249
-   5 │ Trees       0.0182846    0.0204864   0.0404257  0.0245542   0.319328  0.139772    0.0585171
-   6 │ Vegetation  0.00442494   0.015797    0.0789011  0.0464686   0.49601   0.0964562   0.0407997
-   7 │ Built Up    0.0892711    0.118764    0.177746   0.200785    0.293111  0.33917     0.304133
-```
-"""
-function summarize_signatures(reducer, sigs::DataFrame, label=:label)
-    @pipe DataFrames.groupby(sigs, label) |> DataFrames.combine(_, DataFrames.Not(label) .=> reducer, renamecols=false)
-end
-
-function summarize_signatures(sigs::DataFrame, label=:label)
-    return summarize_signatures(mean, sigs, label)
-end
-
-"""
-    plot_signatures(bandset::Type{<:AbstractBandset}, sigs::DataFrame; label=:label, colors=wong_colors())
+    plot_signatures(bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
 
 Plot the spectral signatures for one or more land cover types.
 
 # Parameters
 - `bandset`: The sensor type to which the signatures belong.
-- `sigs`: A `DataFrame` of signatures with columns corresponding to bands and labels.
-- `label`: The column of `sigs` in which the land cover type is stored (default = :label).
+- `raster`: A `RasterStack` from which we want to extract the spectral signatures.
+- `shp`: A `Tables.jl` compatible object containing a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
+- `label`: The column in `shp` corresponding to the land cover type.
 - `colors`: The color scheme used by the plot.
 
 # Example
@@ -119,14 +80,11 @@ landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02
 # Load Shapefile
 shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 
-# Extract Signatures
-sigs = extract_signatures(landsat, shp, :C_name) |> summarize_signatures
-
 # Plot Signatures
-plot_signatures(Landsat8, sigs)
+plot_signatures(Landsat8, landsat, shp, :MC_name)
 ```
 """
-function plot_signatures(bandset::Type{<:AbstractBandset}, sigs::DataFrame; label=:label, colors=wong_colors())
+function plot_signatures(bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
     # Create Figure
     fig = Figure(resolution=(1000,500))
 
@@ -142,7 +100,7 @@ function plot_signatures(bandset::Type{<:AbstractBandset}, sigs::DataFrame; labe
     )
     
     # Plot Signatures
-    plot_signatures!(ax, bandset, sigs; label=label, colors=colors)
+    plot_signatures!(ax, bandset, raster, shp, label; colors=colors)
 
     # Add Legend
     Legend(fig[1,2], ax, "Classification")
@@ -152,7 +110,7 @@ function plot_signatures(bandset::Type{<:AbstractBandset}, sigs::DataFrame; labe
 end
 
 """
-    plot_signatures!(ax, bandset::Type{<:AbstractBandset}, sigs::DataFrame; label=:label, colors=wong_colors())
+    plot_signatures!(ax, bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
 
 Plot spectral signatures for each land cover type specified in a given shapefile by mutating a `Makie.Axis` object.
 
@@ -161,8 +119,9 @@ Accepts the same keywords as `Makie.lines!`.
 # Parameters
 - `ax`: The `Makie.Axis` into which we want to draw our plot.
 - `bandset`: The sensor type to which the signatures belong.
-- `sigs`: A `DataFrame` of signatures with columns corresponding to bands and labels.
-- `label`: The column of `sigs` in which the land cover type is stored (default = :label).
+- `raster`: A `RasterStack` from which we want to extract the spectral signatures.
+- `shp`: A `Tables.jl` compatible object containing a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
+- `label`: The column in `shp` corresponding to the land cover type.
 - `colors`: The color scheme used by the plot.
 
 # Example
@@ -174,24 +133,28 @@ sentinel = @pipe read_bands(Sentinel2, "data/T11UPT_20200804T183919/R60m/") |> d
 # Load Shapefile
 shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 
-# Extract Signatures
-landsat_sigs = extract_signatures(landsat, shp, :MC_name) |> summarize_signatures
-sentinel_sigs = extract_signatures(sentinel, shp, :MC_name) |> summarize_signatures
-
 # Create Axes
 fig = Figure();
 ax1 = Axis(fig[1,1], xlabel="Wavelength (nm)", ylabel="Reflectance", title="Landsat Signatures");
 ax2 = Axis(fig[2,1], xlabel="Wavelength (nm)", ylabel="Reflectance", title="Sentinel Signatures");
 
 # Plot Signatures
-plot_signatures!(ax1, Landsat8, landsat_sigs; colors=cgrad(:tab10))
-plot_signatures!(ax2, Sentinel2, sentinel_sigs; colors=cgrad(:tab10))
+plot_signatures!(ax1, Landsat8, landsat, shp, :MC_name; colors=cgrad(:tab10))
+plot_signatures!(ax2, Sentinel2, sentinel, shp, :MC_name; colors=cgrad(:tab10))
 
 # Add Legend
 Legend(fig[:,2], ax1)
 ```
 """
-function plot_signatures!(ax, bandset::Type{<:AbstractBandset}, sigs::DataFrame; label=:label, colors=wong_colors())
-    sigs_only = sigs[:, Not(label)]
-    _plot_signatures!(ax, bandset, Matrix(sigs_only), Symbol.(names(sigs_only)), sigs[:, label]; colors=colors)
+function plot_signatures!(ax, bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
+    # Extract Signatures
+    extracted = @pipe extract_signatures(raster, shp, label) |> fold_rows(mean, _, :label)
+
+    # Prepare Signatures For Plotting
+    sigs = Tables.matrix(extracted)[:,2:end] .|> Float32
+    labels = Tables.matrix(extracted)[:,1] .|> string
+    bands = filter(!=(:label), Tables.columnnames(extracted))
+
+    # Plot Signatures
+    _plot_signatures!(ax, bandset, sigs, bands, labels; colors=colors)
 end

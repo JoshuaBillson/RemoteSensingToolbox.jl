@@ -91,18 +91,31 @@ function plot_mask(mask, classes, figure=(;), legend=(;))
     return fig
 end
 
+function plot_image(img)
+    fig, ax, plt = @pipe img |> rotr90 |> CairoMakie.image(_, axis=(;aspect=CairoMakie.DataAspect()), figure=(; resolution=reverse(size(img)) .+ 64))
+    CairoMakie.hidedecorations!(ax)
+    return fig, ax, plt
+end
+
 "Adjust image histogram by performing a linear stretch to squeeze all values between the percentiles `lower` and `upper` into the range [0,1]."
 function _linear_stretch(img::AbstractRaster, lower, upper)
     return _linear_stretch(Float32.(efficient_read(img)), lower, upper)
 end
 
 function _linear_stretch(img::AbstractRaster{Float32}, lower, upper)
+    # Read Image Into Memory
     img = img |> efficient_read
     values = img |> skipmissing |> collect |> sort!
-    lb = quantile(values, lower, sorted=true)
-    ub = quantile(values, upper, sorted=true)
-    normalized = Rasters.modify(x -> Images.adjust_histogram(x, Images.LinearStretching((lb,ub)=>nothing)), img)
-    return mask!(normalized; with=img)
+
+    # Find Lower And Upper Bounds
+    lb = Float32(quantile(values, lower, sorted=true))
+    ub = Float32(quantile(values, upper, sorted=true))
+
+    # Adjust Histogram
+    adjusted = img .- lb
+    adjusted ./= (ub - lb)
+    clamp!(adjusted, 0.0f0, 1.0f0)
+    return mask!(adjusted; with=img)
 end
 
 "Turn a raster into an image compatible with Images.jl."
@@ -115,16 +128,16 @@ function _raster_to_image(raster::Raster)
 end
 
 function _raster_to_image(raster::Array)
-    return _raster_to_image(Images.N0f8.(raster))
+    return _raster_to_image(ImageCore.N0f8.(raster))
 end
 
-function _raster_to_image(raster::Array{Images.N0f8})
+function _raster_to_image(raster::Array{ImageCore.N0f8})
     if size(raster, 3) == 1
         return _raster_to_image(raster[:,:,1])
     end
-    return @pipe permutedims(raster, (3,2,1)) |> Images.colorview(Images.RGB, _)
+    return @pipe permutedims(raster, (3,2,1)) |> ImageCore.colorview(ImageCore.RGB, _)
 end
 
-function _raster_to_image(raster::Matrix{Images.N0f8})
-    return @pipe permutedims(raster, (2, 1)) |> Images.colorview(Images.Gray, _)
+function _raster_to_image(raster::Matrix{ImageCore.N0f8})
+    return @pipe permutedims(raster, (2, 1)) |> ImageCore.colorview(ImageCore.Gray, _)
 end

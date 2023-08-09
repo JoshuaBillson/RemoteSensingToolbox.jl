@@ -29,7 +29,7 @@ function fit_transform(::Type{PCA}, raster::Union{<:AbstractRasterStack, <:Abstr
     ((stats_fraction <= 0) || (stats_fraction > 1)) && throw(ArgumentError("`stats_fraction` must in the interval (0, 1]!"))
 
     # Prepare Data For Statistics
-    data = _raster_to_df(raster) |> dropmissing! |> Matrix
+    data = RasterTable(raster) |> dropmissing |> Tables.matrix
 
     # Fit PCA
     bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]
@@ -104,12 +104,11 @@ function inverse_transform(transformation::PCA, raster::AbstractRaster; output_t
         mask!(restored_raster, with=view(raster, Rasters.Band(i)))
     end
 
+    # Recover Band Names
     if isempty(transformation.bands)
         return restored_raster
     else
         rasters = [restored_raster[Rasters.Band(i)] for i in eachindex(transformation.bands)]
         return RasterStack(rasters..., name=transformation.bands)
     end
-
-    return restored_raster
 end

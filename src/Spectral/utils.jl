@@ -9,8 +9,8 @@ end
 
 function _plot_signatures!(ax, bandset::Type{<:AbstractBandset}, sigs::Matrix{<:AbstractFloat}, bands::Vector{Symbol}, labels; colors=wong_colors(), kwargs...)
     # Check Arguments
-    (size(sigs, 2) != length(bands)) && ArgumentError("Length of signatures ($(size(sigs, 2))) must be equal to number of bands ($(length(bands)))!")
-    (size(sigs, 1) != length(labels)) && ArgumentError("Number of signatures ($(size(sigs, 1))) must be equal to number of labels ($(length(labels)))")
+    (size(sigs, 2) != length(bands)) && throw(ArgumentError("Length of signatures ($(size(sigs, 2))) must be equal to number of bands ($(length(bands)))!"))
+    (size(sigs, 1) != length(labels)) && throw(ArgumentError("Number of signatures ($(size(sigs, 1))) must be equal to number of labels ($(length(labels)))"))
 
     # Plot Signatures
     for i in 1:size(sigs,1)
@@ -20,7 +20,7 @@ end
 
 function _plot_signature!(ax, bandset::Type{<:AbstractBandset}, signature::Vector{<:AbstractFloat}, bands::Vector{Symbol}; kwargs...)
     # Check Arguments
-    (length(signature) != length(bands)) && ArgumentError("Length of signatures ($(length(sigs))) must be equal to number of bands ($(length(bands)))!")
+    (length(signature) != length(bands)) && throw(ArgumentError("Length of signatures ($(length(sigs))) must be equal to number of bands ($(length(bands)))!"))
 
     # Sort Bands In Ascending Order
     x, y = _sort_signature(bandset, signature, bands)
