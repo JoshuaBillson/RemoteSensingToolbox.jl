@@ -16,10 +16,6 @@ include("utils.jl")
 
 include("raster_table.jl")
 
-#include("Utils/Utils.jl")
-
-#using .Utils
-
 include("Bandsets/Bandsets.jl")
 
 using .Bandsets

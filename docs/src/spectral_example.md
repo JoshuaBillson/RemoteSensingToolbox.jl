@@ -38,30 +38,43 @@ Examining the shapefile gives us some idea of how its contents are structured. A
    8 │ Polygon(5 Points)   missing      3  Bare Earth      6  Bare Earth  20230527_125120033074_286
 ```
 
-We can extract the signatures inside each polygon with `extract_signatures`, then compute the average of each land cover class with `summarize_signatures`.
+We can extract the signatures inside each polygon with `extract_signatures`. This method returns a `RasterTable`, which is a special type optimized for extracting
+tablular data from a raster data source. Because `RasterTable` implements the `Tables.jl` interface, it can be directly sunk into other table constructors, such as 
+`DataFrames`, and is also compatible with external libraries like `TableOperations.jl`.
 
 ```julia
-sigs = extract_signatures(landsat, shp, :C_name) |> summarize_signatures
+sigs = extract_signatures(landsat, shp, :C_name) |> DataFrame
 ```
 
 ```
-7×8 DataFrame
- Row │ label       B1           B2          B3         B4          B5        B6          B7         
-     │ String      Float32      Float32     Float32    Float32     Float32   Float32     Float32    
-─────┼──────────────────────────────────────────────────────────────────────────────────────────────
-   1 │ Hail Scar   0.0617346    0.107954    0.188092   0.247114    0.508847  0.322815    0.173574
-   2 │ Bare Earth  0.0483927    0.0539072   0.0773476  0.0883738   0.231219  0.307681    0.199805
-   3 │ Road        0.0396956    0.0530674   0.0933762  0.0952315   0.245672  0.205506    0.142639
-   4 │ Lake        0.000517442  0.00360272  0.0132789  0.00628491  0.031176  0.00697667  0.00377249
-   5 │ Trees       0.0182846    0.0204864   0.0404257  0.0245542   0.319328  0.139772    0.0585171
-   6 │ Vegetation  0.00442494   0.015797    0.0789011  0.0464686   0.49601   0.0964562   0.0407997
-   7 │ Built Up    0.0892711    0.118764    0.177746   0.200785    0.293111  0.33917     0.304133
+1925×8 DataFrame
+  Row │ B1         B2         B3        B4        B5        B6        B7        label     
+      │ Float32    Float32    Float32   Float32   Float32   Float32   Float32   String    
+──────┼───────────────────────────────────────────────────────────────────────────────────
+    1 │ 0.057235   0.10547    0.188932  0.24847   0.513405  0.315323  0.166107  Hail Scar
+    2 │ 0.0574     0.105415   0.188712  0.24946   0.513735  0.317908  0.167593  Hail Scar
+    3 │ 0.0584175  0.107175   0.19182   0.253887  0.515577  0.319585  0.168087  Hail Scar
+    4 │ 0.0583625  0.10723    0.190995  0.253393  0.514615  0.317715  0.167097  Hail Scar
+    5 │ 0.05806    0.10745    0.189895  0.250368  0.50774   0.315048  0.165475  Hail Scar
+    6 │ 0.05553    0.102885   0.184175  0.243272  0.498417  0.307485  0.160938  Hail Scar
+    7 │ 0.05267    0.0983475  0.176585  0.230073  0.48783   0.29159   0.153292  Hail Scar
+  ⋮   │     ⋮          ⋮         ⋮         ⋮         ⋮         ⋮         ⋮          ⋮
+ 1919 │ 0.0320725  0.05993    0.11306   0.127415  0.272258  0.27322   0.220777  Built Up
+ 1920 │ 0.100575   0.127168   0.199218  0.23164   0.285677  0.323985  0.258645  Built Up
+ 1921 │ 0.077145   0.112097   0.17081   0.19677   0.25705   0.320877  0.28015   Built Up
+ 1922 │ 0.10712    0.136765   0.19666   0.225068  0.268655  0.33284   0.302288  Built Up
+ 1923 │ 0.0856425  0.123235   0.185853  0.211675  0.273     0.373623  0.351072  Built Up
+ 1924 │ 0.088145   0.119578   0.17059   0.204442  0.27487   0.355857  0.325553  Built Up
+ 1925 │ 0.0518725  0.0816275  0.148673  0.15189   0.28774   0.309218  0.29786   Built Up
+                                                                         1911 rows omitted
 ```
 
-Finally, we can visualize the signatures as a line graph with `plot_signatures`.
+While `extract_signatures` can be a good first step for further statistical analysis or training classification modelsFinally, we are also often interested in
+visualizing the spectral signatures associated with each land cover type. To to do, we can call `plot_signatures`, which plots each signature as a `CairoMakie`
+line graph.
 
 ```julia
-plot_signatures(Landsat8, sigs)
+plot_signatures(Landsat8, landsat, shp, :C_name)
 ```
 
 ![](figures/landsat_sigs_wong.png)
@@ -69,13 +82,15 @@ plot_signatures(Landsat8, sigs)
 We see that we've plotted the signatures for each land cover type in `shp`. However, we may wish to override the default colors. Fortunately, `plot_signatures` accepts an optional argument allowing us to specify any colors that we wish.
 
 ```julia
-plot_signatures(Landsat8, sigs; colors=cgrad(:tab10))
+plot_signatures(Landsat8, landsat, shp, :C_name; colors=cgrad(:tab10))
 ```
 
 ![](figures/landsat_sigs_tab10.png)
 
 
-The `plot_signatures!` method is nearly identical to `plot_signatures`, but it expects a `Makie.Axis` object as its first argument onto which the signatures will be drawn (hence the exclamation). This allows us to create more complicated plots than are supported by `plot_signatures`. We will demonstrate this capability by plotting the same signatures for three different sensors, each of which passed over our study area within a period of four days. For this reason, we can compare the signatures with a single shapefile, as we do not expect the land cover types to change significantly within this span of time.
+The `plot_signatures!` method is nearly identical to `plot_signatures`, but it expects a `Makie.Axis` object as its first argument onto which the signatures will be
+drawn (hence the exclamation). This allows us to create more sophisticated plots than are supported by `plot_signatures`. We will demonstrate this capability by plotting
+the same signatures for three different sensors, each of which passed over our study area within a period of four days. 
 
 ```julia
 # Load Sentinel and DESIS
@@ -93,9 +108,9 @@ ax3 = Axis(fig[3,1], title="DESIS", xlabel="Wavelength (nm)", xlabelfont=:bold)
 axs = [ax1, ax2, ax3]
 
 # Plot Signatures
-colors = cgrad([:saddlebrown, :orange, :navy, :green], 4, categorical=true)
+colors = cgrad([:saddlebrown, :navy, :orange, :green], 4, categorical=true)
 for (bandset, sensor, ax) in zip((Landsat8, Sentinel2, DESIS), sensors, axs)
-   @pipe extract_signatures(sensor, shp, :MC_name) |> summarize_signatures |> plot_signatures!(ax, bandset, _; colors=colors)
+   plot_signatures!(ax, bandset, sensor, shp, :MC_name; colors=colors)
    xlims!(ax, 400, 1000)
 end
 

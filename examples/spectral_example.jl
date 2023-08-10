@@ -9,14 +9,14 @@ function main()
     shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 
     # Extract Signatures
-    landsat_sigs = extract_signatures(landsat, shp, :C_name) |> summarize_signatures
+    landsat_sigs = extract_signatures(landsat, shp, :C_name) |> DataFrame
 
     # Plot Signatures
-    fig1 = plot_signatures(Landsat8, landsat_sigs)
+    fig1 = plot_signatures(Landsat8, landsat, shp, :C_name)
     CairoMakie.save("landsat_sigs_wong.png", fig1)
 
     # Plot Signatures With Custom Colors
-    fig2 = plot_signatures(Landsat8, landsat_sigs; colors=cgrad(:tab10))
+    fig2 = plot_signatures(Landsat8, landsat, shp, :C_name; colors=cgrad(:tab10))
     CairoMakie.save("landsat_sigs_tab10.png", fig2)
 
     # Load Sentinel and DESIS
@@ -34,9 +34,9 @@ function main()
     axs = [ax1, ax2, ax3]
 
     # Plot Signatures
-    colors = cgrad([:saddlebrown, :orange, :navy, :green], 4, categorical=true)
+    colors = cgrad([:saddlebrown, :navy, :orange, :green], 4, categorical=true)
     for (bandset, sensor, ax) in zip((Landsat8, Sentinel2, DESIS), sensors, axs)
-        @pipe extract_signatures(sensor, shp, :C_name) |> summarize_signatures |> plot_signatures!(ax, bandset, _)
+        plot_signatures!(ax, bandset, sensor, shp, :MC_name; colors=colors)
         xlims!(ax, 400, 1000)
     end
 
@@ -45,6 +45,8 @@ function main()
 
     # Save Figure
     CairoMakie.save("multisensor_sigs.png", fig3)
+
+    return landsat_sigs
 end
 
-main()
+#main()
