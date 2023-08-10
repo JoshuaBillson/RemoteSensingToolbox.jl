@@ -12,7 +12,7 @@ The first step in our analysis is to load our remotely sensed data and convert t
 using RemoteSensingToolbox, DataFrames, Shapefile, CairoMakie
 using Pipe: @pipe
 
-landsat = @pipe Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(Landsat8, _)
+landsat = @pipe read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/") |> dn_to_reflectance(Landsat8, _)
 ```
 
 Next, we need to load a shapefile which defines some regions containing each type of land cover that we're interested in.

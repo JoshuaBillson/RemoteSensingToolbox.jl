@@ -82,15 +82,30 @@ function transform_column(f, table::RasterTable, column::Symbol)
 end
 
 function dropmissing(table::RasterTable)
+    # Find Indices Of Rows With No Missing Values
     nonmissing = @pipe [skipmissing(col) |> eachindex |> BitSet for col in table] |> intersect(_...) |> collect
-    return Tables.subset(table, nonmissing) |> TableOperations.narrowtypes |> RasterTable
+
+    # Drop Missing Rows
+    newtable = Tables.subset(table, nonmissing) |> RasterTable #|> TableOperations.narrowtypes |> RasterTable
+
+    # Narrow Types
+    types = [typeof(first(c)) for c in newtable]
+    newcols = [zeros(t, Tables.rowcount(newtable)) for t in types]
+
+    # Copy Columns
+    i = 1
+    for col in newtable
+        newcols[i] .= col
+        i += 1
+    end
+
+    # Return New RasterTable
+    return RasterTable(layers(newtable), newcols)
 end
 
 function group_rows(table::RasterTable, by::Symbol)
-    # Divide Table Into Groups
     group_names = table[by] |> Set
     groups = [findall(==(group_name), table[by]) for group_name in group_names]
-
     return [RasterTable(Tables.subset(table, rows)) for rows in groups]
 end
 

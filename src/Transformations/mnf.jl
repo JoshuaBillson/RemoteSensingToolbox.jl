@@ -5,21 +5,32 @@ struct MNF <: AbstractTransformation
     components::Int
     mean::Vector{Float64}
     projection::Matrix{Float64}
-    cumulative_variance::Vector{Float64}
-    explained_variance::Vector{Float64}
+    eigenvalues::Vector{Float64}
     bands::Vector{Symbol}
 end
 
 function Base.show(io::IO, ::MIME"text/plain", x::MNF)
-    cv = @pipe round.(x.cumulative_variance[1:x.components], digits=4) |> string.(_) |> join(_, "  ")
-    ev = @pipe round.(x.explained_variance[1:x.components], digits=4) |> string.(_) |> join(_, "  ")
+    ev = @pipe round.(x.eigenvalues[1:x.components], digits=4) |> string.(_) |> join(_, "  ")
     projection = round.(x.projection[:,1:x.components], digits=4)
     println(io, "MNF(in_dim=$(size(projection, 1)), out_dim=$(size(projection, 2)), explained_variance=$(round(x.cumulative_variance[x.components], digits=4)))\n")
     println(io, "Projection Matrix:")
     show(io, "text/plain", projection)
     println(io, "\n\nImportance of Components:")
-    println(io, "  Cumulative Variance: ", cv)
-    print(io, "  Explained Variance: ", ev)
+    print(io, "  Eigenvalues: ", ev)
+end
+
+function fit_transform(::Type{MNF}, raster::Union{<:AbstractRasterStack, <:AbstractRaster}; components=nbands(raster), method=:cov, stats_fraction=1.0)
+    # Check Arguments
+    ((components < 1) || components > length(raster)) && throw(ArgumentError("`components` must be in the interval [1, length(stack)]!"))
+    !in(method, (:cov, :cor)) && throw(ArgumentError("`method` must be one of `:cov` or `:cor`!"))
+    ((stats_fraction <= 0) || (stats_fraction > 1)) && throw(ArgumentError("`stats_fraction` must in the interval (0, 1]!"))
+
+    # Prepare Data For Statistics
+    data = RasterTable(raster) |> dropmissing |> matrix
+
+    # Fit MNF
+    bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]
+    return _fit(MNF, data, components, method, stats_fraction, bands)
 end
 
 function _compute_diff(raster::AbstractRaster; smooth=false)
@@ -47,35 +58,27 @@ function _compute_diff(raster::AbstractRasterStack; smooth=false)
     return map(x -> _compute_diff(x, smooth=smooth), raster)
 end
 
-function _compute_ncm(raster; smooth=false)
+function _compute_ncm(raster::AbstractRasterStack; smooth=false)
     Σ = _compute_diff(raster, smooth=smooth) |> RasterTable |> dropmissing |> Tables.matrix |> cov
     Σ .*= eltype(Σ)(0.5)
     return Σ
 end
 
-function fit_transform(::Type{MNF}, raster::Union{<:AbstractRasterStack, <:AbstractRaster}; components=nbands(raster), method=:cov, stats_fraction=1.0)
-    # Check Arguments
-    ((components < 1) || components > length(raster)) && throw(ArgumentError("`components` must be in the interval [1, length(stack)]!"))
-    !in(method, (:cov, :cor)) && throw(ArgumentError("`method` must be one of `:cov` or `:cor`!"))
-    ((stats_fraction <= 0) || (stats_fraction > 1)) && throw(ArgumentError("`stats_fraction` must in the interval (0, 1]!"))
-
-    # Prepare Data For Statistics
-    data = RasterTable(raster) |> dropmissing |> matrix
-
-    # Fit MNF
-    bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]
-    return _fit(MNF, data, components, method, stats_fraction, bands)
-end
-
-function _fit(::Type{MNF}, data::Matrix, components, method, stats_fraction, bands)
-    # Draw Sample
-    n = size(data, 1)
-    n_samples = round(Int, n * stats_fraction)
-    samples = Random.randperm(n)[1:n_samples]
-    X = @view data[samples,:]
+function _fit(::Type{MNF}, raster::AbstractRasterStack, noise_sample::AbstractRasterStack, components, bands)
+    # Extract Data
+    @time data = RasterTable(raster) |> dropmissing |> Tables.matrix
 
     # Compute Means
-    μ = @pipe mean(data, dims=1) |> dropdims(_, dims=1)
+    @time μ = @pipe mean(data, dims=1) |> dropdims(_, dims=1)
+
+    # Compute NCM
+    @time Σ = _compute_ncm(noise_sample; smooth=true)
+
+    # Compute Renormalization Matrix To Whiten Noise
+    λ, E = LinearAlgebra.eigen(Σ)
+    F = E * (LinearAlgebra.Diagonal(λ .^ -0.5))
+    Δ = LinearAlgebra.Diagonal(λ)
+    return E, F, Δ, Σ
     
     # Compute Eigenvalues and Eigenvectors of Covariance/Correlation Matrix
     eigs, vecs = method == :cov ? (X |> cov |> LinearAlgebra.eigen) : (X |> cor |> LinearAlgebra.eigen)
