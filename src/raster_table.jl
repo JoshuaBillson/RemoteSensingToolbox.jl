@@ -86,21 +86,21 @@ function dropmissing(table::RasterTable)
     nonmissing = @pipe [skipmissing(col) |> eachindex |> BitSet for col in table] |> intersect(_...) |> collect
 
     # Drop Missing Rows
-    newtable = Tables.subset(table, nonmissing) |> RasterTable #|> TableOperations.narrowtypes |> RasterTable
+    nonmissing_cols = [view(c, nonmissing) for c in table]
 
     # Narrow Types
-    types = [typeof(first(c)) for c in newtable]
-    newcols = [zeros(t, Tables.rowcount(newtable)) for t in types]
+    types = [typeof(first(c)) for c in nonmissing_cols]
+    newcols = [zeros(t, length(nonmissing)) for t in types]
 
     # Copy Columns
     i = 1
-    for col in newtable
+    for col in nonmissing_cols
         newcols[i] .= col
         i += 1
     end
 
     # Return New RasterTable
-    return RasterTable(layers(newtable), newcols)
+    return RasterTable(layers(table), newcols)
 end
 
 function group_rows(table::RasterTable, by::Symbol)

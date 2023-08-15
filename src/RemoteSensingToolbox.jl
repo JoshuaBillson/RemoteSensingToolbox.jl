@@ -54,6 +54,7 @@ export extract_signatures, summarize_signatures, plot_signatures, plot_signature
 export tocube, create_tiles, mask_pixels, mask_pixels!
 
 # Export Transformations
-export AbstractTransformation, Normalize, PCA, fit_transform, transform, inverse_transform
+export PCA, MNF, fit_pca, forward_pca, inverse_pca, fit_mnf, forward_mnf, inverse_mnf
+export noise_cov, data_cov, projection, eigenvalues, cumulative_eigenvalues, accounted_snr, cumulative_snr, cumulative_variance, explained_variance
 
 end

@@ -90,3 +90,8 @@ end
 function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
     return map(x -> mask_pixels!(x, mask; kwargs...), raster)
 end
+
+function encode(raster::AbstractRaster, type; missingval=typemax(type))
+    new_raster = @pipe rebuild(raster, missingval=missingval) |> clamp.(_, typemin(type), typemax(type)) |> Rasters.mask!(_; with=raster)
+    round.(type, new_raster)
+end
