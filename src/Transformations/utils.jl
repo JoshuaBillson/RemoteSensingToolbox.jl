@@ -27,3 +27,8 @@ function _centralize(raster::AbstractRasterStack, μ::AbstractVector{Float32})
         @pipe x .- μ[i] |> Rasters.mask!(_, with=x)
     end
 end
+
+function _eigen(A)
+    eigs, vecs = LinearAlgebra.eigen(A)
+    return reverse(eigs), reverse(vecs, dims=2)
+end

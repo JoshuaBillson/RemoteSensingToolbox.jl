@@ -16,11 +16,11 @@ struct Geology{T<:AbstractBandset} end
 """
     visualize(g::AbstractRaster; lower=0.02, upper=0.98)
     visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(img::AbstractBandSet, ::Type{TrueColor{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractBandSet, ::Type{ColorInfrared{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractBandSet, ::Type{SWIR{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractBandSet, ::Type{Agriculture{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractBandSet, ::Type{Geology{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractRasterStack, ::Type{TrueColor{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractRasterStack, ::Type{ColorInfrared{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractRasterStack, ::Type{SWIR{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractRasterStack, ::Type{Agriculture{AbstractBandset}}; kwargs...)
+    visualize(img::AbstractRasterStack, ::Type{Geology{AbstractBandset}}; kwargs...)
 
 Visualize a satellite image after applying a histogram stretch. Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
 
@@ -28,16 +28,14 @@ A number of band combinations are supported for types implementing the `Abstract
 
 # Example 1
 ```julia
-landsat = read(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
-img = mndwi(landsat, Landsat8) |> visualize
-save("mndwi.png", img)
+landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+mndwi(landsat, Landsat8) |> visualize
 ```
 
 # Example 2
 ```julia
-landsat = read(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
-img = visualize(landsat, TrueColor{Landsat8}; upper=0.90)
-save("truecolor.png", img)
+landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+visualize(landsat, TrueColor{Landsat8}; upper=0.90)
 ```
 """
 function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; kwargs...)

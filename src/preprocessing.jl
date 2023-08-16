@@ -10,7 +10,8 @@ Transform the multi-layer `RasterStack` to a multi-band raster.
 
 # Example
 ```julia-repl
-julia> landsat = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1");
+julia> landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/");
+
 julia> tocube(landsat)
 7821×7921×7 Raster{Float32,3} B1 with dimensions: 
   X Projected{Float64} LinRange{Float64}(493785.0, 728385.0, 7821) ForwardOrdered Regular Points crs: WellKnownText,
@@ -89,4 +90,9 @@ end
 
 function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
     return map(x -> mask_pixels!(x, mask; kwargs...), raster)
+end
+
+function encode(raster::AbstractRaster, type; missingval=typemax(type))
+    new_raster = @pipe rebuild(raster, missingval=missingval) |> clamp.(_, typemin(type), typemax(type)) |> Rasters.mask!(_; with=raster)
+    round.(type, new_raster)
 end

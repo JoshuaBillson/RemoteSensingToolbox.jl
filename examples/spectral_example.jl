@@ -49,4 +49,4 @@ function main()
     return landsat_sigs
 end
 
-#main()
+main()
