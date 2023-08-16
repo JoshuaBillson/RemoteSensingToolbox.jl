@@ -10,21 +10,18 @@ function main()
     @pipe visualize(roi, TrueColor{Sentinel2}; upper=0.99) |> Images.save("original.png", _)
 
     # Perform full PCA to determine the number of principal components to keep
-    pca_full = fit_transform(PCA, sentinel, method=:cov)
-    Base.show(stdout, "text/plain", pca_full)
+    pca = fit_pca(sentinel, method=:cov)
+    Base.show(stdout, "text/plain", pca)
 
-    # Fit a PCA transform that retains the first three principal components
-    pca = fit_transform(PCA, sentinel, components=3)
-
-    # Perform Transformation
-    transformed = transform(pca, roi)
+    # Perform a PCA Transformation, Retaining The First Three Components
+    transformed = forward_pca(pca, roi, 3)
 
     # Visualize Transformation
     r, g, b = [view(transformed, Rasters.Band(i)) for i in 1:3]
     @pipe visualize(r, g, b; upper=0.99) |> Images.save("pca.png", _)
 
     # Reverse Transformation
-    recovered = inverse_transform(pca, transformed)
+    recovered = inverse_pca(pca, transformed)
 
     # Visualize Recovered Image
     @pipe visualize(recovered, TrueColor{Sentinel2}; upper=0.99) |> Images.save("recovered.png", _)
