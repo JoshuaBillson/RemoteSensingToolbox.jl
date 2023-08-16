@@ -10,27 +10,6 @@ import RemoteSensingToolbox: align_rasters, efficient_read
 
 """
 The supertype of all sensor types. Provides sensor-specific information to many `RemoteSensingToolbox` methods.
-
-# Example Minimal Implementation
-```julia
-struct Landsat8 <: AbstractBandset end
-
-bands(::Type{Landsat8}) = [:B1, :B2, :B3, :B4, :B5, :B6, :B7]
-
-wavelengths(::Type{Landsat8}) = [443, 483, 560, 660, 865, 1650, 2220]
-
-blue(::Type{Landsat8}) = :B2
-
-green(::Type{Landsat8}) = :B3
-
-red(::Type{Landsat8}) = :B4
-
-nir(::Type{Landsat8}) = :B5
-
-swir1(::Type{Landsat8}) = :B6
-
-swir2(::Type{Landsat8}) = :B7
-```
 """
 abstract type AbstractBandset end
 
