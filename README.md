@@ -5,22 +5,41 @@
 [![Build Status](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JoshuaBillson/RemoteSensingToolbox.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JoshuaBillson/RemoteSensingToolbox.jl)
 
-[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl). It is intended to provide a collection of tools for visualizing, manipulating, and interpreting remotely sensed imagery.
+[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl) for visualizing, analyzing, and manipulating remotely sensed imagery. Most methods expect either an `AbstractRaster` or `AbstractRasterStack` as input and return the same. The most important exception to this rule is `visualize`, which returns an `Array` of either `Gray` or `RGB` pixels, depending on whether the visualization is intended to be in color or grayscale. The result is that the output of `visualize` will be automatically displayed inside `Pluto`. 
 
 # Features
 
-| Feature                   | Description                                                 | Implemented        |
-| :------------------------ | :---------------------------------------------------------- | :----------------: |
-| Visualization             | Visualize images with various band composites               | :white_check_mark: |
-| Land Cover Indices        | Calculate indices such as MNDWI and NDVI                    | :white_check_mark: |
-| QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks     | :white_check_mark: |
-| Pixel Masking             | Mask pixels to remove objects such as clouds or shadows     | :white_check_mark: |
-| PCA                       | Perform PCA analysis, transformation, and reconstruction    | :white_check_mark: |
-| MNF                       | Minimum Noise Fraction transformation and reconstruction    | :x:                |
-| Signature Analysis        | Visualize spectral signatures for provided land cover types | :white_check_mark: |
-| Land Cover Classification | Exposes an `MLJ` interface for classifying land cover types | :x:                |
-| Endmember Extraction      | Extract spectral endmembers from an image                   | :x:                |
-| Spectral Unmixing         | Perform spectral unmixing under a given endmember library   | :x:                |
+`RemoteSensingToolbox` is a work in progress. This means that new features are being added and existing features are subject to change. To contribute to this project, please create an issue on [GitHub](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) or open a pull request.  A summary of both existing and future features are provided below:
+
+| Feature                   | Description                                                  | Implemented        |
+| :------------------------ | :----------------------------------------------------------- | :----------------: |
+| Visualization             | Visualize images with various band composites                | :white_check_mark: |
+| Land Cover Indices        | Calculate indices such as MNDWI and NDVI                     | :white_check_mark: |
+| QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks      | :white_check_mark: |
+| Pixel Masking             | Mask pixels to remove objects such as clouds or shadows      | :white_check_mark: |
+| PCA                       | Perform PCA analysis, transformation, and reconstruction     | :white_check_mark: |
+| MNF                       | Minimum Noise Fraction transformation and reconstruction     | :white_check_mark: |
+| Signature Analysis        | Visualize spectral signatures for different land cover types | :white_check_mark: |
+| Land Cover Classification | Exposes an `MLJ` interface for classifying land cover types  | :x:                |
+| Endmember Extraction      | Extract spectral endmembers from an image                    | :x:                |
+| Spectral Unmixing         | Perform spectral unmixing under a given endmember library    | :x:                |
+
+
+# Rasters.jl
+
+`RemoteSensingToolbox` is intended to be used in conjunction with the wider Julia ecosystem and as such, seeks to avoid duplicating functinalities provided by other packages. As the majority of methods accept and return `AbstractRaster` or `AbstractRasterStack` objects, users should be able to call methods from [Rasters.jl](https://github.com/rafaqz/Rasters.jl) at any point in the processing pipeline. A summary of common functionalities offered by `Rasters.jl` is provided below: 
+
+| **Method**                          | **Description**                                                                        |
+| :---------------------------------- | :------------------------------------------------------------------------------------- |
+| `mosaic`                            | Join rasters covering different extents into a single array or file.                   |
+| `crop`                              | Shrink objects to specific dimension sizes or the extent of another object.            |
+| `extend`                            | Extend objects to specific dimension sizes or the extent of another object.            |
+| `trim`                              | Trims areas of missing values for arrays and across stack layers.                      |
+| `resample`                          | Resample data to a different size and projection, or snap to another object.           |
+| `mask`                              | Mask a raster by a polygon or the non-missing values of another Raster.                |
+| `replace_missing`                   | Replace all missing values in a raster and update missingval.                          |
+| `extract`                           | Extract raster values from points or geometries.                                       |
+| `zonal`                             | Calculate zonal statistics for a raster masked by geometries.                          |
 
 # Quickstart Example
 

@@ -33,4 +33,4 @@ function main()
     @pipe mosaicview(true_color, index; npad=5, fillvalue=0.0, ncol=2) |> Images.save("mndwi.png", _)
 end
 
-#main()
+main()

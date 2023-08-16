@@ -26,3 +26,5 @@ function main()
     # Visualize Recovered Image
     @pipe visualize(recovered, TrueColor{Sentinel2}; upper=0.99) |> Images.save("recovered.png", _)
 end
+
+#main()
