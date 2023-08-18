@@ -2,7 +2,6 @@ module RemoteSensingToolbox
 
 import ArchGDAL
 import ImageCore
-import CairoMakie
 import Tables
 import TableOperations
 using OrderedCollections
