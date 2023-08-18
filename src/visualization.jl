@@ -76,6 +76,8 @@ end
 
 function plot_mask(mask, classes, figure=(;), legend=(;))
     # Create Color Gradient
+    return  1
+    """
     colors = CairoMakie.cgrad(:viridis, length(classes), categorical=true)
 
     # Create Plot
@@ -87,12 +89,14 @@ function plot_mask(mask, classes, figure=(;), legend=(;))
     CairoMakie.Legend(fig[1,2], elements, classes, "Legend", legend...)
 
     return fig
+    """
 end
 
 function plot_image(img)
-    fig, ax, plt = @pipe img |> rotr90 |> CairoMakie.image(_, axis=(;aspect=CairoMakie.DataAspect()), figure=(; resolution=reverse(size(img)) .+ 64))
-    CairoMakie.hidedecorations!(ax)
-    return fig, ax, plt
+    return 1
+    #fig, ax, plt = @pipe img |> rotr90 |> CairoMakie.image(_, axis=(;aspect=CairoMakie.DataAspect()), figure=(; resolution=reverse(size(img)) .+ 64))
+    #CairoMakie.hidedecorations!(ax)
+    #return fig, ax, plt
 end
 
 "Adjust image histogram by performing a linear stretch to squeeze all values between the percentiles `lower` and `upper` into the range [0,1]."

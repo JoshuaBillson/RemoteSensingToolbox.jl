@@ -3,6 +3,13 @@ mutable struct RasterTable <: Tables.AbstractColumns
     cols::Vector{Vector}
 end
 
+function _dim_cols(raster)
+    ds = Iterators.product(dims(raster)...)
+    xs = @pipe map(first, ds) |> reshape(_, :)
+    ys = @pipe map(x -> x[2], ds) |> reshape(_, :)
+    return (xs, ys)
+end
+
 function _replace_missing(raster::AbstractRaster)
     m = missingval(raster)
     r = reshape(raster, :)

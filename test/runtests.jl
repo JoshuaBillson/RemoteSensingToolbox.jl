@@ -1,7 +1,9 @@
 using RemoteSensingToolbox
 using Test
 using Images
+using Shapefile
 import ArchGDAL
+import Tables
 using Pipe: @pipe
 
 @testset "Landsat" begin
@@ -78,4 +80,21 @@ end
     recovered = inverse_pca(pca, transformed)
     @test names(sentinel) == names(recovered)
     @test all(isapprox.(tocube(recovered).data, tocube(sentinel).data, atol=0.1))
+end
+
+@testset "makie" begin
+
+    # Load Sentinel
+    sentinel = @pipe read_bands(Sentinel2, "data/sentinel/") |> dn_to_reflectance(Sentinel2, _)
+
+    # Read Shapefile
+    shp = Shapefile.Table("data/landcover/landcover.shp") |> Tables.columntable
+
+    # Should Throw Error Telling Us To Load CairoMakie
+    @test_throws ErrorException plot_signatures(Sentinel2, sentinel, shp, :MC_name)
+
+    using CairoMakie
+
+    # Should Run Now That CairoMakie is Loaded
+    fig = plot_signatures(Sentinel2, sentinel, shp, :MC_name)
 end

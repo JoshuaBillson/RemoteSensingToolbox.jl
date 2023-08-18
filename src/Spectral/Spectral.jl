@@ -8,7 +8,6 @@ using Logging
 using LinearAlgebra
 using Pipe: @pipe
 
-import CairoMakie: Figure, Axis, lines!, Legend, save, Makie.wong_colors, cgrad
 import RemoteSensingToolbox: align_rasters, efficient_read, RasterTable, transform_column, dropmissing, fold_rows
 import ..Bandsets: AbstractBandset, wavelength, bands, wavelengths
 

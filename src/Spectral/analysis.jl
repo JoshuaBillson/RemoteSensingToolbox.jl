@@ -1,5 +1,5 @@
 """
-    extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; drop_missing=false)
+    extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; drop_missing=true)
 
 Extract signatures from the given `RasterStack` within regions specified by a provided shapefile.
 
@@ -7,7 +7,7 @@ Extract signatures from the given `RasterStack` within regions specified by a pr
 - `stack`: The `RasterStack` from which to extract spectral signatures.
 - `shp`: A `Tables.jl` compatible object containing a :geometry column storing a `GeoInterface.jl` compatible geometry and a label column indicating the land cover type.
 - `label`: The column in `shp` corresponding to the land cover type.
-- 'drop_missing': Drop all rows with at least one missing value in either the bands or labels (default = true).
+- `drop_missing`: Drop all rows with at least one missing value in either the bands or labels (default = true).
 
 # Returns
 A `RasterTable` consisting of rows for each observed signature and columns storing the respective bands and land cover type.
@@ -39,7 +39,7 @@ julia> extract_signatures(landsat, shp, :C_name) |> DataFrame
 """
 function extract_signatures(stack::AbstractRasterStack, shp, label::Symbol; drop_missing=true)
     # Prepare Labels
-    labels = shp[:,label]
+    labels = Tables.getcolumn(shp, label)
     fill_to_label = Set(labels) |> enumerate |> Dict
     label_to_fill = Set(labels) |> enumerate .|> reverse |> Dict
 
@@ -84,29 +84,8 @@ shp = Shapefile.Table("data/landcover/landcover.shp") |> DataFrame
 plot_signatures(Landsat8, landsat, shp, :MC_name)
 ```
 """
-function plot_signatures(bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
-    # Create Figure
-    fig = Figure(resolution=(1000,500))
-
-    # Create Axis
-    ax = Axis(
-        fig[1,1], 
-        xlabel="Wavelength (nm)", 
-        ylabel="Reflectance", 
-        xlabelfont=:bold, 
-        ylabelfont=:bold, 
-        xlabelpadding=10.0, 
-        ylabelpadding=10.0, 
-    )
-    
-    # Plot Signatures
-    plot_signatures!(ax, bandset, raster, shp, label; colors=colors)
-
-    # Add Legend
-    Legend(fig[1,2], ax, "Classification")
-
-    # Return Figure
-    return fig
+function plot_signatures(args...; kwargs...)
+    error("`plot_signatures` requires `CairoMakie` to be activated in your environment! Run `import CairoMakie` to fix this problem.")
 end
 
 """
@@ -146,15 +125,6 @@ plot_signatures!(ax2, Sentinel2, sentinel, shp, :MC_name; colors=cgrad(:tab10))
 Legend(fig[:,2], ax1)
 ```
 """
-function plot_signatures!(ax, bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=wong_colors())
-    # Extract Signatures
-    extracted = @pipe extract_signatures(raster, shp, label) |> fold_rows(mean, _, :label)
-
-    # Prepare Signatures For Plotting
-    sigs = Tables.matrix(extracted)[:,2:end] .|> Float32
-    labels = Tables.matrix(extracted)[:,1] .|> string
-    bands = filter(!=(:label), Tables.columnnames(extracted))
-
-    # Plot Signatures
-    _plot_signatures!(ax, bandset, sigs, bands, labels; colors=colors)
+function plot_signatures!(args...; kwargs...)
+    error("`plot_signatures!` requires `CairoMakie` to be activated in your environment! Run `import CairoMakie` to fix this problem.")
 end

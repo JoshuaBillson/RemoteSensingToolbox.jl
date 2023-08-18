@@ -89,7 +89,7 @@ Read and decode the quality assurance mask for the given `AbstractBandset`.
 - `src`: Either a directory containing the quality assurance mask named according to standard conventions or the file itself.
 
 # Returns
-The decoded quality assurance mask as a `RasterStack`. Masked values are encoded as 1, non-masked values as 0, and missing values as 255.
+The decoded quality assurance mask as a `RasterStack`. Encodes masked values as 1 and non-masked values as 0.
 
 # Example
 ```julia-repl
