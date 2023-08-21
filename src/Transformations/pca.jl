@@ -203,11 +203,7 @@ function _fit_pca(data::Matrix, method, stats_fraction, bands)
     μ = @pipe mean(data, dims=1) |> dropdims(_, dims=1)
     
     # Compute Eigenvalues and Eigenvectors of Covariance/Correlation Matrix
-    eigs, vecs = method == :cov ? (X |> cov |> LinearAlgebra.eigen) : (X |> cor |> LinearAlgebra.eigen)
-    
-    # Get Principal Components and Weights
-    λ = reverse(eigs)
-    pc = reverse(vecs, dims=2)
+    λ, pc = method == :cov ? (X |> cov |> _eigen) : (X |> cor |> _eigen)
     
     # Cumulative and Explained Variance
     cumulative_var = cumsum(λ) ./ (cumsum(λ)[end])

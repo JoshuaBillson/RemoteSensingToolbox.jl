@@ -18,7 +18,7 @@ julia> desis = read_bands(DESIS, "data/DESIS-HSI-L2A-DT0884573241_001-20200601T2
 
 julia> roi = @view desis[X(1019:1040), Y(550:590)];
 
-julia> mnf = fit_mnf(desis, noise_sample=roi)
+julia> mnf = fit_mnf(desis, roi)
 MNF(dimensions=235) 
 
 Projection Matrix:
@@ -127,19 +127,19 @@ function Base.show(io::IO, ::MIME"text/plain", x::MNF)
     # Extract Projection, Eigenvalues, and SNR
     P = round.(projection(x), digits=4)
     ev = round.(eigenvalues(x), digits=4)
-    snr = round.(snr(x), digits=4)
+    snr_ = round.(snr(x), digits=4)
     snr_cum = round.(cumulative_snr(x), digits=4)
     ev_cum = round.(cumulative_eigenvalues(x), digits=4)
 
     # Split EV and SNR
     ev = length(ev) > 10 ? vcat(ev[1:9], ["..."], ev[end:end]) : ev
-    snr = length(snr) > 10 ? vcat(snr[1:9], ["..."], snr[end:end]) : snr
+    snr_ = length(snr_) > 10 ? vcat(snr_[1:9], ["..."], snr_[end:end]) : snr_
     snr_cum = length(snr_cum) > 10 ? vcat(snr_cum[1:9], ["..."], snr_cum[end:end]) : snr_cum
     ev_cum = length(ev_cum) > 10 ? vcat(ev_cum[1:9], ["..."], ev_cum[end:end]) : ev_cum
 
     # Turn EV and SNR Into Strings
     ev = @pipe ev |> string.(_) |> join(_, "  ")
-    snr = @pipe snr |> string.(_) |> join(_, "  ")
+    snr_ = @pipe snr_ |> string.(_) |> join(_, "  ")
     snr_cum = @pipe snr_cum |> string.(_) |> join(_, "  ")
     ev_cum = @pipe ev_cum |> string.(_) |> join(_, "  ")
 
@@ -150,37 +150,34 @@ function Base.show(io::IO, ::MIME"text/plain", x::MNF)
     println(io, "\n\nComponent Statistics:")
     println(io, "  Eigenvalues: ", ev)
     println(io, "  Cumulative Eigenvalues: ", ev_cum)
-    println(io, "  Explained SNR: ", snr)
+    println(io, "  Explained SNR: ", snr_)
     print(io, "  Cumulative SNR: ", snr_cum)
 end
 
 """
-    fit_mnf(raster; noise_sample=raster, smooth=true)
+    fit_mnf(raster, noise_sample; smooth=true)
 
 Fit a Minimum Noise Fraction (MNF) transformation to the given `AbstractRasterStack` or `AbstractRaster`.
 
 # Parameters
 - `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to fit the MNF transformation.
 - `noise_sample`: A homogenous (spectrally uniform) region extracted from `raster` for calculating the noise covariance matrix.
-- `smooth`: The MNF transform cannot be computed if any band in `noise_sample` has zero variance. To correct this, you may wish to introduce a small smoothing term (false by default).
+- `smooth`: The MNF transform cannot be computed if any band in `noise_sample` has zero variance. To correct this, you may wish to introduce a small smoothing term (true by default).
 """
-function fit_mnf(raster::Union{<:AbstractRasterStack, <:AbstractRaster};  noise_sample=raster, smooth=true)
-    # Check Arguments
-    ((noise_sample isa AbstractRasterStack) || (noise_sample isa AbstractRaster)) || throw(ArgumentError("`noise_sample` must be a Raster!"))
-
-    # Fit MNF
-    bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]
-    return _fit_mnf(raster, noise_sample, bands, smooth)
+function fit_mnf(raster::Union{<:AbstractRasterStack, <:AbstractRaster},  noise_sample::Union{<:AbstractRasterStack, <:AbstractRaster}; smooth=true)
+    return @pipe RasterTable(raster) |> dropmissing |> Tables.matrix |> _fit_mnf(_, noise_sample, Symbol[], smooth)
 end
 
 """
     forward_mnf(transformation::MNF, raster, components::Int)
+    forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
 
-Perform a forward Minimum Noise Fraction (MNF) rotation on the given raster, retaining only the specified number of components.
+Perform a forward Minimum Noise Fraction (MNF) rotation on the given raster or signatures, retaining only the specified number of components.
 
 # Parameters
 - `transformation`: A previously fitted MNF transformation.
 - `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform the MNF transformation.
+- `sigs`: An n x b matrix of spectral signatures where n is the number of signatures and b is the number of bands.
 - `components`: The number of bands to retain in the transformed image. All band numbers exceeding this value will be discarded.
 """
 function forward_mnf(transformation::MNF, raster::AbstractRasterStack, components::Int)
@@ -189,35 +186,44 @@ end
 
 function forward_mnf(transformation::MNF, raster::AbstractRaster, components::Int)
     # Project To New Axes
-    P = projection(transformation)[:,1:components]
-    output_dims = (size(raster, 1), size(raster, 2), components)
-    transformed = @pipe Float32.(raster.data) |> reshape(_, (:, size(raster, Rasters.Band))) |> (_ * P) |> reshape(_, output_dims) |> _copy_dims(_, raster)
+    transformed = 
+        @pipe raster.data |> 
+        reshape(_, (:, size(raster, Rasters.Band))) |> 
+        forward_mnf(transformation, _, components) |> 
+        reshape(_, (size(raster, 1), size(raster, 2), components)) |> 
+        _copy_dims(_, raster)
 
     # Mask Missing Values
     t = eltype(transformed)
     return @pipe mask!(transformed; with=(@view raster[Rasters.Band(1)]), missingval=typemax(t)) |> rebuild(_, missingval=typemax(t))
 end
 
+function forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
+    return forward_mnf(transformation, Float32.(sigs), components)
+end
+
+function forward_mnf(transformation::MNF, sigs::Matrix{Float32}, components::Int)
+    return sigs * projection(transformation)[:,1:components]
+end
+
 """
     inverse_mnf(transformation::MNF, raster::AbstractRaster)
+    inverse_mnf(transformation::MNF, sigs::Matrix)
 
-Perform an inverse Minimum Noise Fraction (MNF) transformation to recover the original image.
+Perform an inverse Minimum Noise Fraction (MNF) transformation to recover the original image or signatures.
 
 # Parameters
 - `transformation`: A previously fitted MNF transformation.
 - `raster`: An `AbstractRaster` representing a previously transformed image. The number of bands should be less than or equal to that of the original image.
+- `sigs`: An n x p matrix of transformed signatures where n is the number of signatures and p is the number of retained components.
 """
 function inverse_mnf(transformation::MNF, raster::AbstractRaster)
     # Check Arguments
     1 <= nbands(raster) <= size(projection(transformation), 1) || throw(ArgumentError("nbands(raster) must be less than or equal to the number of bands in the original image!"))
 
-    # Prepare Inverse Projection
-    components = nbands(raster)
-    P = projection(transformation)
-    D = LinearAlgebra.inv(P)[1:components,:]
-
     # Invert Transformation
-    restored = @pipe reshape(raster.data, (:, size(raster, Rasters.Band))) |> (_ * D) |> reshape(_, (size(raster.data)[1:2]..., size(P, 1)))
+    outdim = (size(raster.data)[1:2]..., size(projection(transformation), 1))
+    restored = @pipe reshape(raster.data, (:, size(raster, Rasters.Band))) |> inverse_mnf(transformation, _) |> reshape(_, outdim)
 
     # Write Results Into a Raster
     restored_raster = _copy_dims(restored, raster)
@@ -229,6 +235,20 @@ function inverse_mnf(transformation::MNF, raster::AbstractRaster)
 
     # Restore Band Names
     return restored_raster
+end
+
+function inverse_mnf(transformation::MNF, sigs::Matrix)
+    return inverse_mnf(transformation, Float32.(sigs))
+end
+
+function inverse_mnf(transformation::MNF, sigs::Matrix{Float32})
+    # Prepare Inverse Projection
+    components = size(sigs, 2)
+    P = projection(transformation)
+    D = LinearAlgebra.inv(P)[1:components,:]
+
+    # Run Inverse Transformation
+    return sigs * D
 end
 
 function _compute_diff(raster::AbstractRaster; smooth=false)
@@ -264,16 +284,13 @@ function _compute_ncm(raster::Union{<:AbstractRasterStack, <:AbstractRaster}; sm
     return Σ
 end
 
-function _fit_mnf(raster, noise_sample, bands, smooth)
+function _fit_mnf(data::Matrix{Float64}, noise_sample, bands, smooth)
     # Compute NCM
     Σₙ = _compute_ncm(noise_sample; smooth=smooth)
 
     # Compute Renormalization Matrix To Whiten Noise
     λ, E = _eigen(Σₙ)
     F = E * (LinearAlgebra.Diagonal(λ .^ -0.5))
-
-    # Extract Data
-    data = RasterTable(raster) |> dropmissing |> Tables.matrix .|> Float64
 
     # Compute Data Covariance
     Σ = cov(data)
@@ -288,5 +305,9 @@ function _fit_mnf(raster, noise_sample, bands, smooth)
     H = F * G
 
     # Return MNF Transform
-    return MNF(Float32.(Σₙ), Σ, Float32.(H), Float32.(λ_data))
+    return MNF(Float32.(Σₙ), Float32.(Σ), Float32.(H), Float32.(λ_data))
+end
+
+function _fit_mnf(data::Matrix, noise_sample, bands, smooth)
+    return _fit_mnf(Float64.(data), noise_sample, bands, smooth)
 end

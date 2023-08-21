@@ -7,7 +7,7 @@ Compute the Modified Normalised Difference Water Index (Xu 2006).
 MNDWI = (green - swir) / (green + swir)
 """
 function mndwi(green::AbstractRaster, swir::AbstractRaster)
-    return mndwi(green .* 1.0f0, swir .* 1.0f0)
+    return mndwi(encode(green, Float32), encode(swir, Float32))
 end
  
 function mndwi(green::AbstractRaster{Float32}, swir::AbstractRaster{Float32})
@@ -28,7 +28,7 @@ Compute the Normalized Difference Water Index (McFeeters 1996).
 NDWI = (green - nir) / (green + nir)
 """
 function ndwi(green::AbstractRaster, nir::AbstractRaster)
-    return ndwi(green .* 1.0f0, nir .* 1.0f0)
+    return ndwi(encode(green, Float32), encode(nir, Float32))
 end
  
 function ndwi(green::AbstractRaster{Float32}, nir::AbstractRaster{Float32})
@@ -49,7 +49,7 @@ Compute the Normalized Difference Vegetation Index.
 NDVI = (nir - red) / (nir + red)
 """
 function ndvi(nir::AbstractRaster, red::AbstractRaster)
-    return ndvi(nir .* 1.0f0, red .* 1.0f0)
+    return ndvi(encode(nir, Float32), encode(red, Float32))
 end
  
 function ndvi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32})
@@ -74,7 +74,7 @@ L represents the amount of green vegetation cover, which is set to 0.33 by defau
 SAVI = ((nir - red) / (nir + red + L)) * (1 + L)
 """
 function savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
-    return savi(nir .* 1.0f0, red .* 1.0f0; L=L)
+    return savi(encode(nir, Float32), encode(red, Float32); L=L)
 end
  
 function savi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32}; L=0.33)
@@ -97,7 +97,7 @@ NDMI is sensitive to the moisture levels in vegetation. It is used to monitor dr
 NDMI = (nir - swir1) / (nir + swir1)
 """
 function ndmi(nir::AbstractRaster, swir1::AbstractRaster)
-    return ndmi(nir .* 1.0f0, swir1 .* 1.0f0)
+    return ndmi(encode(nir, Float32), encode(swir1, Float32))
 end
  
 function ndmi(nir::AbstractRaster{Float32}, swir1::AbstractRaster{Float32})
@@ -120,7 +120,7 @@ NBRI is used to emphasize burned areas.
 NBRI = (nir - swir2) / (nir + swir2)
 """
 function nbri(nir::AbstractRaster, swir2::AbstractRaster)
-    return nbri(nir .* 1.0f0, swir2 .* 1.0f0)
+    return nbri(encode(nir, Float32), encode(swir2, Float32))
 end
  
 function nbri(nir::AbstractRaster{Float32}, swir2::AbstractRaster{Float32})
@@ -143,7 +143,7 @@ NDBI is used to emphasize urban and built-up areas.
 NDBI = (swir1 - nir) / (swir1 + nir)
 """
 function ndbi(swir1::AbstractRaster, nir::AbstractRaster)
-    return ndbi(swir1 .* 1.0f0, nir .* 1.0f0)
+    return ndbi(encode(swir1, Float32), encode(nir, Float32))
 end
  
 function ndbi(swir1::AbstractRaster{Float32}, nir::AbstractRaster{Float32})

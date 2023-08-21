@@ -32,7 +32,7 @@ parent:
 """
 function tocube(rs::RasterStack; layers=names(rs))
     cube = cat([rs[l] for l in layers]..., dims=Band)
-    band_dim = Band(LookupArrays.Categorical(1:length(layers), order=LookupArrays.ForwardOrdered()))
+    band_dim = Band(LookupArrays.Categorical((keys(rs) |> collect .|> string), order=LookupArrays.Unordered()))
     return rebuild(cube; dims=(dims(cube)[1], dims(cube)[2], band_dim))
 end
 
@@ -92,7 +92,22 @@ function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
     return map(x -> mask_pixels!(x, mask; kwargs...), raster)
 end
 
+"""
+    encode(raster::AbstractRaster, type; missingval=typemax(type))
+
+
+Encodes a raster into the provided type.
+
+# Parameters
+- `raster`: The `AbstractRaster` or `AbstractRasterStack` to be encoded.
+- `type`: The type to encode as. Common values include `UInt16`, `Int16`, and `Float32`.
+- `missingval`: The value to use to denote missing pixels. Set to the maximum value of `type` by default.
+"""
 function encode(raster::AbstractRaster, type; missingval=typemax(type))
     new_raster = @pipe rebuild(raster, missingval=missingval) |> clamp.(_, typemin(type), typemax(type)) |> Rasters.mask!(_; with=raster)
-    round.(type, new_raster)
+    return type <: Integer ? round.(type, new_raster) : type.(new_raster)
+end
+
+function encode(raster::AbstractRasterStack, type; kwargs...)
+    return map(x -> encode(x, type; kwargs...), raster)
 end

@@ -16,6 +16,14 @@ function _replace_missing(raster::AbstractRaster)
     return ismissing(m) ? ifelse.(ismissing.(r), missing, r) : ifelse.(r .== m, missing, r)
 end
 
+function _bands_to_cols(raster::AbstractRaster)
+    contains_bands = any(isa.(dims(raster), Rasters.Band))
+    layers = contains_bands ? collect(dims(raster, Rasters.Band)) : (raster.name == Symbol("") ? [1] : [raster.name])
+    layers = eltype(layers) <: Integer ? [Symbol("Band_$i") for i in layers] : layers
+    layers = eltype(layers) <: AbstractString ? Symbol.(layers) : layers
+    return layers
+end
+
 function RasterTable(raster::AbstractRasterStack)
     layers = keys(raster) |> collect
     cols = [_replace_missing(raster[layer]) for layer in layers]
@@ -23,8 +31,10 @@ function RasterTable(raster::AbstractRasterStack)
 end
 
 function RasterTable(raster::AbstractRaster)
-    stack = any(isa.(dims(raster), Rasters.Band)) ? RasterStack(raster, layersfrom=Rasters.Band) : RasterStack(raster)
-    return RasterTable(stack)
+    layers = _bands_to_cols(raster)
+    contains_bands = any(isa.(dims(raster), Rasters.Band))
+    cols = contains_bands ? [_replace_missing(@view raster[rasters.band(i)]) for i in eachindex(layers)] : [_replace_missing(raster)]
+    return RasterTable(layers ,cols)
 end
 
 function RasterTable(rasters::Vararg{Union{<:AbstractRasterStack, <:AbstractRaster}})

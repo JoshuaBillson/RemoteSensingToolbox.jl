@@ -50,7 +50,7 @@ export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 export extract_signatures, summarize_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
-export tocube, create_tiles, mask_pixels, mask_pixels!
+export tocube, create_tiles, mask_pixels, mask_pixels!, encode
 
 # Export Transformations
 export PCA, MNF, fit_pca, forward_pca, inverse_pca, fit_mnf, forward_mnf, inverse_mnf

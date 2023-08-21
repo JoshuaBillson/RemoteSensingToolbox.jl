@@ -46,8 +46,8 @@ function visualize(g::AbstractRaster; kwargs...)
     visualize(Float32.(g); kwargs...)
 end
     
-function visualize(stack::AbstractRasterStack, ::Type{TrueColor{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(red(stack, T), green(stack, T), blue(stack, T); kwargs...)
+function visualize(raster::Union{<:AbstractRasterStack, <:AbstractRaster}, ::Type{TrueColor{T}}; kwargs...) where {T <: AbstractBandset}
+    visualize(red(raster, T), green(raster, T), blue(raster, T); kwargs...)
 end
 
 function visualize(stack::AbstractRasterStack ,::Type{ColorInfrared{T}}; kwargs...) where {T <: AbstractBandset}

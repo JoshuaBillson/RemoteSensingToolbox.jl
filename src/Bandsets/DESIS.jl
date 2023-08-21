@@ -5,17 +5,17 @@ Implements the `AbstractBandset` interface for Landsat 7.
 """
 struct DESIS <: AbstractBandset end
 
-bands(::Type{DESIS}) = Symbol.(["B_$i" for i in 1:235])
+bands(::Type{DESIS}) = Symbol.(["Band_$i" for i in 1:235])
 
 wavelengths(::Type{DESIS}) = collect(401.275:2.553:998.75)
 
-blue(::Type{DESIS}) = :B_25
+blue(::Type{DESIS}) = :Band_25
 
-green(::Type{DESIS}) = :B_52
+green(::Type{DESIS}) = :Band_52
 
-red(::Type{DESIS}) = :B_90
+red(::Type{DESIS}) = :Band_90
 
-nir(::Type{DESIS}) = :B_175
+nir(::Type{DESIS}) = :Band_175
 
 dn2rs(::Type{DESIS}) = (scale=0.0001, offset=0.0)
 

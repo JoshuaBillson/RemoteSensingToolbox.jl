@@ -62,9 +62,10 @@ function read_bands(::Type{T}, dir::String) where {T <: AbstractBandset}
         error("Error: No valid files could be parsed from the provided directory!")
     elseif first(filtered)[2] isa AbstractVector
         filename = first(filtered)[1]
-        layers = first(filtered)[2]
+        layers = first(filtered)[2] .|> string
         raster = Raster(filename) |> _ensure_missing
-        return RasterStack([raster[Rasters.Band(i)] for i in eachindex(layers)]..., name=layers)
+        band_dim = Band(LookupArrays.Categorical(layers, order=LookupArrays.Unordered()))
+        return rebuild(raster, dims=(dims(raster)[1:2]..., band_dim))
     else
         rasters = @pipe first.(filtered) |> Raster.(_) |> align_rasters(_...) |> _ensure_missing.(_)
         return RasterStack(rasters..., name=map(x -> x[2], filtered))
@@ -73,6 +74,7 @@ end
 
 for op = (:blue, :green, :red, :nir, :swir1, :swir2)
     @eval $op(raster::Rasters.AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset} = raster[$op(T)]
+    @eval $op(raster::Rasters.AbstractRaster, ::Type{T}) where {T <: AbstractBandset} = raster[Rasters.Band(At(string($op(T))))]
 end
 
 include("landsat8.jl")
