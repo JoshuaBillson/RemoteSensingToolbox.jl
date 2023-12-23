@@ -5,7 +5,7 @@ sentinel = read_bands(Sentinel2, "data/sentinel/")
 
 # Test Visualization
 for color in [TrueColor, Agriculture, ColorInfrared, Geology, SWIR]
-    @test visualize(sentinel, color{Sentinel2}) isa AbstractArray{RGB{N0f8}}
+    @test visualize(color{Sentinel2}, sentinel) isa AbstractArray{RGB{N0f8}}
 end
 
 # Test DN to Reflectance
@@ -15,7 +15,7 @@ end
 # Test Indices
 sentinel_sr = @pipe dn_to_reflectance(Sentinel2, sentinel; clamp_values=true) |> encode(_, Float64)
 for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
-    result = index(sentinel_sr, Sentinel2)
+    result = index(Sentinel2, sentinel_sr)
     @test result isa AbstractArray{Float32}
     @test (result |> skipmissing |> maximum) <= 1.0f0
     @test (result |> skipmissing |> minimum) >= -1.0f0

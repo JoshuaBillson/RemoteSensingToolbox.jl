@@ -8,7 +8,7 @@ using Pipe: @pipe
 import Tables
 import Random
 import LinearAlgebra
-import RemoteSensingToolbox: _copy_dims, tocube, _map_index, _copy_dims, nbands, RasterTable, dropmissing
+import RemoteSensingToolbox
 
 include("utils.jl")
 include("pca.jl")

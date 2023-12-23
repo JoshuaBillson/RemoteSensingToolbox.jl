@@ -8,7 +8,7 @@ using Logging
 using LinearAlgebra
 using Pipe: @pipe
 
-import RemoteSensingToolbox: align_rasters, efficient_read, RasterTable, transform_column, dropmissing, fold_rows
+import RemoteSensingToolbox: efficient_read, RasterTable, transform_column, dropmissing, fold_rows
 import ..Bandsets: AbstractBandset, wavelength, bands, wavelengths
 
 include("utils.jl")

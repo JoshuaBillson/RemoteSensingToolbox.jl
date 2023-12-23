@@ -194,8 +194,7 @@ function forward_mnf(transformation::MNF, raster::AbstractRaster, components::In
         _copy_dims(_, raster)
 
     # Mask Missing Values
-    t = eltype(transformed)
-    return @pipe mask!(transformed; with=(@view raster[Rasters.Band(1)]), missingval=typemax(t)) |> rebuild(_, missingval=typemax(t))
+    return @pipe rebuild(transformed, missingval=eltype(transformed)) |> RemoteSensingToolbox.mask!(_, (@view raster[Rasters.Band(1)]))
 end
 
 function forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
@@ -229,9 +228,8 @@ function inverse_mnf(transformation::MNF, raster::AbstractRaster)
     restored_raster = _copy_dims(restored, raster)
 
     # Mask Missing Values
-    t = eltype(restored_raster)
-    restored_raster = rebuild(restored_raster, missingval=typemax(t))
-    mask!(restored_raster, with=(@view raster[Rasters.Band(1)]))
+    restored_raster = rebuild(restored_raster, missingval=typemax(eltype(restored_raster)))
+    RemoteSensingToolbox.mask!(restored_raster, (@view raster[Rasters.Band(1)]))
 
     # Restore Band Names
     return restored_raster

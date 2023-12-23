@@ -55,7 +55,6 @@ struct PCA
     projection::Matrix{Float32}
     cumulative_variance::Vector{Float32}
     explained_variance::Vector{Float32}
-    bands::Vector{Symbol}
 end
 
 """
@@ -118,11 +117,10 @@ function fit_pca(raster::Union{<:AbstractRasterStack, <:AbstractRaster}; method=
     ((stats_fraction <= 0) || (stats_fraction > 1)) && throw(ArgumentError("`stats_fraction` must in the interval (0, 1]!"))
 
     # Prepare Data For Statistics
-    data = RasterTable(raster) |> dropmissing |> Tables.matrix .|> Float64
+    data = sample(raster) |> Tables.matrix .|> Float64
 
     # Fit PCA
-    bands = raster isa AbstractRasterStack ? collect(names(raster)) : Symbol[]
-    return _fit_pca(data, method, stats_fraction, bands)
+    return _fit_pca(data, method, stats_fraction)
 end
 
 """
@@ -136,19 +134,32 @@ Perform a forward Principal Component Analysis (PCA) transformation on the given
 - `components`: The number of bands to retain in the transformed image. All band numbers exceeding this value will be discarded.
 """
 function forward_pca(transformation::PCA, raster::AbstractRasterStack, components::Int)
-    return transform(transformation, tocube(raster), components)
+    return forward_pca(transformation, Raster(raster |> efficient_read), components)
 end
 
-function transform(transformation::PCA, raster::AbstractRaster, components::Int)
+function forward_pca(transformation::PCA, raster::AbstractRaster, components::Int)
+    raster = @pipe raster |> efficient_read |> Float32.(_) |> mask!(_, with=raster, missingval=Inf32)
+    println(findall(x -> x==-Inf, raster.data))
+    return forward_pca(transformation, raster, components)
+end
+
+function forward_pca(transformation::PCA, raster::AbstractRaster{Float32}, components::Int)
     # Get Projection
     P = projection(transformation)[:,1:components]
 
     # Project To New Axes
-    output_dims = (size(raster, 1), size(raster, 2), components)
-    transformed = @pipe _centralize(raster, transformation.mean).data |> reshape(_, (:, size(raster, Rasters.Band))) |> (_ * P) |> reshape(_, output_dims) |> _copy_dims(_, raster)
+    transformed = @pipe raster |>
+        replace_missing(_, 0.0f0) |>
+        _centralize!(_, transformation.mean).data |>  # Centralize Data Around the Mean
+        reshape(_, (:, nbands(raster))) |>  # Reshape Data Into a Matrix
+        (_ * P) |>  # Project to new Coordinates
+        reshape(_, (size(raster, 1), size(raster, 2), components)) |>  # Restore Shape of Raster
+        Raster(_, (dims(raster)[1:2]..., Rasters.Band))  # Restore Raster Dimensions
     
+    #println(findall(x -> x==-Inf, transformed.data))
     # Mask Missing Values
-    return @pipe rebuild(transformed, missingval=typemax(eltype(transformed))) |> RemoteSensingToolbox.mask!(_, (@view raster[Rasters.Band(1)]))
+    bmask = boolmask(@view raster[Rasters.Band(1)])
+    return mask!(transformed, with=bmask, missingval=Inf32)
 end
 
 """
@@ -169,28 +180,24 @@ function inverse_pca(transformation::PCA, raster::AbstractRaster)
     P = projection(transformation)[:,1:components]
 
     # Invert Projection
-    restored = @pipe reshape(raster.data, (:, size(raster, Rasters.Band))) |> (_ * P') |> reshape(_, (size(raster.data)[1:2]..., size(P, 1)))
+    restored = @pipe raster |>
+        replace_missing(_, 0.0f0).data |>
+        reshape(_, (:, size(raster, Rasters.Band))) |> 
+        (_ * P') |> 
+        reshape(_, (size(raster.data)[1:2]..., size(P, 1)))
 
     # De-Centralize
     restored .+= reshape(transformation.mean, (1, 1, :))
 
     # Write Results Into a Raster
-    restored_raster = _copy_dims(restored, raster)
+    restored_raster = Raster(restored, (dims(raster)[1:2]..., Rasters.Band))
 
     # Mask Missing Values
-    restored_raster = rebuild(restored_raster, missingval=typemax(eltype(restored_raster)))
-    RemoteSensingToolbox.mask!(restored_raster, (@view raster[Rasters.Band(1)]))
-
-    # Recover Band Names
-    if isempty(transformation.bands)
-        return restored_raster
-    else
-        rasters = [restored_raster[Rasters.Band(i)] for i in eachindex(transformation.bands)]
-        return RasterStack(rasters..., name=transformation.bands)
-    end
+    bmask = boolmask(@view raster[Rasters.Band(1)])
+    return mask!(restored_raster, with=bmask, missingval=Inf32)
 end
 
-function _fit_pca(data::Matrix, method, stats_fraction, bands)
+function _fit_pca(data::Matrix, method, stats_fraction)
     # Draw Sample
     n = size(data, 1)
     n_samples = round(Int, n * stats_fraction)
@@ -198,15 +205,30 @@ function _fit_pca(data::Matrix, method, stats_fraction, bands)
     X = @view data[samples,:]
 
     # Compute Means
-    μ = @pipe mean(data, dims=1) |> dropdims(_, dims=1)
+    μ = @pipe Statistics.mean(data, dims=1) |> dropdims(_, dims=1)
     
     # Compute Eigenvalues and Eigenvectors of Covariance/Correlation Matrix
-    λ, pc = method == :cov ? (X |> cov |> _eigen) : (X |> cor |> _eigen)
+    λ, pc = method == :cov ? (X |> Statistics.cov |> _eigen) : (X |> Statistics.cor |> _eigen)
     
     # Cumulative and Explained Variance
     cumulative_var = cumsum(λ) ./ (cumsum(λ)[end])
     explained_var = λ ./ (cumsum(λ)[end])
 
     # Return Results
-    return PCA(Float32.(μ), Float32.(pc), Float32.(cumulative_var), Float32.(explained_var), bands)
+    return PCA(Float32.(μ), Float32.(pc), Float32.(cumulative_var), Float32.(explained_var))
+end
+
+function _eigen(A)
+    eigs, vecs = LinearAlgebra.eigen(A)
+    return reverse(eigs), reverse(vecs, dims=2)
+end
+
+function _centralize!(raster, μ::AbstractVector)
+    return _centralize(raster, Float32.(μ))
+end
+
+function _centralize!(raster::AbstractRaster, μ::AbstractVector{Float32})
+    bmask = boolmask(raster)
+    raster .-= reshape(μ, (1,1,:))
+    return mask!(raster, with=bmask)
 end

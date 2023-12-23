@@ -1,112 +1,81 @@
+abstract type AbstractCombination{T<:AbstractSatellite} end
+
 """True color band composite."""
-struct TrueColor{T<:AbstractBandset} end
+struct TrueColor{T} <: AbstractCombination{T} end
 
 """Color infrared band composite."""
-struct ColorInfrared{T<:AbstractBandset} end
+struct ColorInfrared{T} <: AbstractCombination{T} end
 
 """SWIR band composite."""
-struct SWIR{T<:AbstractBandset} end
+struct SWIR{T} <: AbstractCombination{T} end
 
 """Agriculture band composite."""
-struct Agriculture{T<:AbstractBandset} end
+struct Agriculture{T} <: AbstractCombination{T} end
 
 """Geology band composite."""
-struct Geology{T<:AbstractBandset} end
+struct Geology{T} <: AbstractCombination{T} end
 
 """
     visualize(g::AbstractRaster; lower=0.02, upper=0.98)
     visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
-    visualize(img::AbstractRasterStack, ::Type{TrueColor{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractRasterStack, ::Type{ColorInfrared{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractRasterStack, ::Type{SWIR{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractRasterStack, ::Type{Agriculture{AbstractBandset}}; kwargs...)
-    visualize(img::AbstractRasterStack, ::Type{Geology{AbstractBandset}}; kwargs...)
+    visualize(::Type{AbstractCombination{AbstractSatellite}}, img::AbstractRasterStack; kwargs...)
 
-Visualize a satellite image after applying a histogram stretch. Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
+Visualize a satellite image by applying a histogram stretch.
 
-A number of band combinations are supported for types implementing the `AbstractBandSet` interface.
+Returns either an RGB or grayscale image compatible with the `Images.jl` ecosystem.
 
-# Example 1
+# Example
 ```julia
-landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
-mndwi(landsat, Landsat8) |> visualize
+using RemoteSensingToolbox, ArchGDAL, Rasters, FileIO, JpegTurbo
+
+# Lazily Read Bands Into a RasterStack
+src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
+stack = RasterStack(src, lazy=true)
+
+# Display True Color Image
+img = visualize(TrueColor{Landsat8}, stack; upper=0.90)
+FileIO.save("truecolor.jpg", img)
 ```
-
-# Example 2
-```julia
-landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
-visualize(landsat, TrueColor{Landsat8}; upper=0.90)
 ```
 """
-function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; kwargs...)
-    visualize(Float32.(r), Float32.(g), Float32.(b); kwargs...)
-end
-
-function visualize(g::AbstractRaster; kwargs...)
-    visualize(Float32.(g); kwargs...)
-end
-    
-function visualize(raster::Union{<:AbstractRasterStack, <:AbstractRaster}, ::Type{TrueColor{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(red(raster, T), green(raster, T), blue(raster, T); kwargs...)
-end
-
-function visualize(stack::AbstractRasterStack ,::Type{ColorInfrared{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(nir(stack, T), red(stack, T), green(stack, T); kwargs...)
-end
-
-function visualize(stack::AbstractRasterStack ,::Type{SWIR{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(swir2(stack, T), swir1(stack, T), red(stack, T); kwargs...)
-end
-
-function visualize(stack::AbstractRasterStack ,::Type{Agriculture{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(swir1(stack, T), nir(stack, T), blue(stack, T); kwargs...)
-end
-
-function visualize(stack::AbstractRasterStack ,::Type{Geology{T}}; kwargs...) where {T <: AbstractBandset}
-    visualize(swir2(stack, T),swir1(stack, T), blue(stack, T); kwargs...)
-end
-
-function visualize(r::AbstractRaster{Float32}, g::AbstractRaster{Float32}, b::AbstractRaster{Float32}; lower=0.02, upper=0.98)
+function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)
     return @pipe map(x -> _linear_stretch(x, lower, upper), (r, g, b)) |> cat(_..., dims=Rasters.Band) |> _raster_to_image
 end
 
-function visualize(g::AbstractRaster{Float32}; lower=0.02, upper=0.98)
+function visualize(g::AbstractRaster; lower=0.02, upper=0.98)
     return _linear_stretch(g, lower, upper) |> _raster_to_image
 end
-
-function plot_mask(mask, classes, figure=(;), legend=(;))
-    # Create Color Gradient
-    return  1
-    """
-    colors = CairoMakie.cgrad(:viridis, length(classes), categorical=true)
-
-    # Create Plot
-    fig, ax, plt = CairoMakie.heatmap(mask, colormap=colors, figure=figure);
-    CairoMakie.hidedecorations!(ax)
-
-    # Create Legend
-    elements = [CairoMakie.PolyElement(color=color, strokecolor=:transparent) for color in colors]
-    CairoMakie.Legend(fig[1,2], elements, classes, "Legend", legend...)
-
-    return fig
-    """
+    
+function visualize(::Type{TrueColor{T}}, raster::Union{<:AbstractRasterStack, <:AbstractRaster}; kwargs...) where {T <: AbstractSatellite}
+    visualize(raster[red_band(T)], raster[green_band(T)], raster[blue_band(T)]; kwargs...)
 end
 
-function plot_image(img)
-    return 1
-    #fig, ax, plt = @pipe img |> rotr90 |> CairoMakie.image(_, axis=(;aspect=CairoMakie.DataAspect()), figure=(; resolution=reverse(size(img)) .+ 64))
-    #CairoMakie.hidedecorations!(ax)
-    #return fig, ax, plt
+function visualize(::Type{ColorInfrared{T}}, raster::AbstractRasterStack; kwargs...) where {T <: AbstractSatellite}
+    visualize(raster[nir_band(T)], raster[red_band(T)], raster[green_band(T)]; kwargs...)
+end
+
+function visualize(::Type{SWIR{T}}, raster::AbstractRasterStack; kwargs...) where {T <: AbstractSatellite}
+    visualize(raster[swir2_band(T)], raster[swir1_band(T)], raster[red_band(T)]; kwargs...)
+end
+
+function visualize(::Type{Agriculture{T}}, raster::AbstractRasterStack; kwargs...) where {T <: AbstractSatellite}
+    visualize(raster[swir1_band(T)], raster[nir_band(T)], raster[blue_band(T)]; kwargs...)
+end
+
+function visualize(::Type{Geology{T}}, raster::AbstractRasterStack; kwargs...) where {T <: AbstractSatellite}
+    visualize(raster[swir2_band(T)], raster[swir1_band(T)], raster[blue_band(T)]; kwargs...)
 end
 
 "Adjust image histogram by performing a linear stretch to squeeze all values between the percentiles `lower` and `upper` into the range [0,1]."
 function _linear_stretch(img::AbstractRaster, lower, upper)
-    return _linear_stretch(Float32.(efficient_read(img)), lower, upper)
+    return _linear_stretch(Float32.(img |> efficient_read), lower, upper)
 end
 
 function _linear_stretch(img::AbstractRaster{Float32}, lower, upper)
     # Read Image Into Memory
     img = img |> efficient_read
+    
+    # Get Sorted Values
     values = img |> skipmissing |> collect |> sort!
 
     # Find Lower And Upper Bounds
@@ -117,20 +86,16 @@ function _linear_stretch(img::AbstractRaster{Float32}, lower, upper)
     adjusted = img .- lb
     adjusted ./= (ub - lb)
     clamp!(adjusted, 0.0f0, 1.0f0)
-    return mask!(adjusted; with=img)
+    return mask!(adjusted, with=img)
 end
 
 "Turn a raster into an image compatible with Images.jl."
 function _raster_to_image(raster::Raster)
     # Set Missing Values To Zero (Black)
-    raster = replace_missing(raster, eltype(raster)(0))
+    raster = replace_missing(raster, 0)
 
     # Dispatch Based On Element Type and Shape
-    return _raster_to_image(raster.data)
-end
-
-function _raster_to_image(raster::Array)
-    return _raster_to_image(ImageCore.N0f8.(raster))
+    return ImageCore.N0f8.(raster.data) |> _raster_to_image
 end
 
 function _raster_to_image(raster::Array{ImageCore.N0f8})
