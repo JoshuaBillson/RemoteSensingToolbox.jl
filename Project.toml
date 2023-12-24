@@ -26,6 +26,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 RemoteSensingToolboxMakieExt = "CairoMakie"
 
 [compat]
+ArchGDAL = "0.10"
 CairoMakie = "0.10"
 DocStringExtensions = "0.9"
 ImageCore = "0.8, 0.9, 0.10"
