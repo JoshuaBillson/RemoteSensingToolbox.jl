@@ -1,36 +1,35 @@
-using RemoteSensingToolbox, Images, CairoMakie, Rasters
+using RemoteSensingToolbox, JpegTurbo, Images, Rasters
 using Pipe: @pipe
 
 function main()
     # Read Landsat Bands
-    landsat = read_bands(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/")
-
-    # Convert DN to Reflectance
-    landsat_sr = dn_to_reflectance(Landsat8, landsat)
+    src = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1/")
+    stack = RasterStack(src, lazy=true)
 
     # Show True Color Composite
-    @pipe visualize(landsat_sr, TrueColor{Landsat8}; upper=0.90) |> Images.imresize(_, ratio=0.2) |> Images.save("true_color.png", _)
-
-    # Mask Clouds
-    qa = read_qa(Landsat8, "data/LC08_L2SP_043024_20200802_20200914_02_T1/")
-    masked_landsat = @pipe mask_pixels(landsat_sr, qa[:cloud]) |> mask_pixels(_, qa[:cloud_shadow])
-
-    # Visualize Cloudless Raster
-    @pipe visualize(masked_landsat, TrueColor{Landsat8}) |> Images.imresize(_, ratio=0.2) |> Images.save("cloudless.png", _)
+    @pipe visualize(TrueColor{Landsat8}, stack; upper=0.90) |> Images.imresize(_, ratio=0.25) |> Images.save("true_color.jpg", _)
 
     # Show Color Infrared Composite
-    @pipe visualize(landsat_sr, ColorInfrared{Landsat8}; upper=0.90) |> Images.imresize(_, ratio=0.2) |> Images.save("color_infrared.png", _)
+    @pipe visualize(ColorInfrared{Landsat8}, stack; upper=0.90) |> Images.imresize(_, ratio=0.25) |> Images.save("color_infrared.jpg", _)
 
     # Show Agriculture Composite
-    @pipe visualize(landsat_sr, Agriculture{Landsat8}; upper=0.90) |> Images.imresize(_, ratio=0.2) |> Images.save("agriculture.png", _)
+    @pipe visualize(Agriculture{Landsat8}, stack; upper=0.90) |> Images.imresize(_, ratio=0.25) |> Images.save("agriculture.jpg", _)
 
-    # Select Region of Interest
-    roi = @view landsat_sr[X(5800:6800), Y(2200:3200)]
+    # Mask Clouds
+    cloud_mask = Raster(src, :clouds)
+    shadow_mask = Raster(src, :cloud_shadow)
+    raster_mask = .!(boolmask(cloud_mask) .|| boolmask(shadow_mask))
+    masked = mask(stack, with=raster_mask)
 
-    # Show MNDWI
-    true_color = visualize(roi, TrueColor{Landsat8}; upper=0.998)
-    index = mndwi(roi, Landsat8) |> visualize
-    @pipe mosaicview(true_color, index; npad=5, fillvalue=0.0, ncol=2) |> Images.save("mndwi.png", _)
+    # Visualize Cloudless Raster
+    @pipe visualize(TrueColor{Landsat8}, masked) |> Images.imresize(_, ratio=0.25) |> Images.save("masked.jpg", _)
+
+    # Display Landcover Indexes
+    indices = RasterStack((mndwi=mndwi(src), ndvi=ndvi(src), ndmi=ndmi(src)))
+    roi = @view merge(stack, indices)[X(5800:6800), Y(2200:3200)]
+    true_color = visualize(TrueColor{Landsat8}, roi; upper=0.998)
+    index_imgs = [visualize(roi[i]) for i in (:mndwi, :ndvi, :ndmi)]
+    @pipe mosaicview(true_color, index_imgs...; npad=10, fillvalue=0.0, ncol=2, rowmajor=true) |> Images.save("indices.jpg", _)
 end
 
 main()

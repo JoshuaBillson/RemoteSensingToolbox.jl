@@ -1,64 +1,49 @@
 """
     mndwi(green::AbstractRaster, swir::AbstractRaster)
-    mndwi(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    mndwi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Modified Normalised Difference Water Index (Xu 2006).
 
 MNDWI = (green - swir) / (green + swir)
 """
 function mndwi(green::AbstractRaster, swir::AbstractRaster)
-    return mndwi(encode(green, Float32), encode(swir, Float32))
+    return _normalized_difference(green, swir)
 end
  
-function mndwi(green::AbstractRaster{Float32}, swir::AbstractRaster{Float32})
-    index = (green .- swir) ./ (green .+ swir)
-    return mask(index; with=green, missingval=-Inf32) |> _drop_nan
-end
-
-function mndwi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return mndwi(green(stack, T), swir1(stack, T))
+function mndwi(x::T) where {T <: AbstractSatellite}
+    return mndwi(Raster(x, :green), Raster(x, :swir1))
 end
 
 """
     ndwi(green::AbstractRaster, nir::AbstractRaster)
-    ndwi(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    ndwi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Water Index (McFeeters 1996).
 
 NDWI = (green - nir) / (green + nir)
 """
 function ndwi(green::AbstractRaster, nir::AbstractRaster)
-    return ndwi(encode(green, Float32), encode(nir, Float32))
+    return _normalized_difference(green, nir)
 end
  
-function ndwi(green::AbstractRaster{Float32}, nir::AbstractRaster{Float32})
-    index = (green .- nir) ./ (green .+ nir)
-    return mask(index; with=green, missingval=-Inf32) |> _drop_nan
-end
-
-function ndwi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return ndwi(green(stack, T), nir(stack, T))
+function ndwi(x::T) where {T <: AbstractSatellite}
+    return ndwi(Raster(x, :green), Raster(x, :nir))
 end
 
 """
     ndvi(nir::AbstractRaster, red::AbstractRaster)
-    ndvi(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    ndvi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Vegetation Index.
 
 NDVI = (nir - red) / (nir + red)
 """
 function ndvi(nir::AbstractRaster, red::AbstractRaster)
-    return ndvi(encode(nir, Float32), encode(red, Float32))
+    return _normalized_difference(nir, red)
 end
  
-function ndvi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32})
-    index = (nir .- red) ./ (nir .+ red)
-    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
-end
-
-function ndvi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return ndvi(nir(stack, T), red(stack, T))
+function ndvi(x::T) where {T <: AbstractSatellite}
+    return ndvi(Raster(x, :nir), Raster(x, :red))
 end
 
 """
@@ -74,21 +59,21 @@ L represents the amount of green vegetation cover, which is set to 0.33 by defau
 SAVI = ((nir - red) / (nir + red + L)) * (1 + L)
 """
 function savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
-    return savi(encode(nir, Float32), encode(red, Float32); L=L)
+    return savi(Float32.(nir), Float32.(red); L=L)
 end
  
 function savi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32}; L=0.33)
-    index = ((nir .- red) ./ (nir .+ red .+ Float32(L))) .* (1.0f0 + Float32(L))
-    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
+    norm_diff = @pipe ((nir .- red) ./ (nir .+ red .+ Float32(L))) .* (1.0f0 + Float32(L)) |> rebuild(_, missingval=Inf32)
+    return @pipe mask!(norm_diff, with=nir) |> RemoteSensingToolbox.mask_nan!
 end
 
-function savi(stack::AbstractRasterStack, ::Type{T}; L=0.33) where {T <: AbstractBandset}
-    return savi(nir(stack, T), red(stack, T); L=L)
+function savi(x::T; L=0.33) where {T <: AbstractSatellite}
+    return savi(Raster(x, :nir), Raster(x, :red); L=L)
 end
 
 """
     ndmi(nir::AbstractRaster, swir1::AbstractRaster)
-    ndmi(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    ndmi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Moisture Index.
 
@@ -97,21 +82,16 @@ NDMI is sensitive to the moisture levels in vegetation. It is used to monitor dr
 NDMI = (nir - swir1) / (nir + swir1)
 """
 function ndmi(nir::AbstractRaster, swir1::AbstractRaster)
-    return ndmi(encode(nir, Float32), encode(swir1, Float32))
+    return _normalized_difference(nir, swir1)
 end
  
-function ndmi(nir::AbstractRaster{Float32}, swir1::AbstractRaster{Float32})
-    index = (nir .- swir1) ./ (nir .+ swir1)
-    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
-end
-
-function ndmi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return ndmi(nir(stack, T), swir1(stack, T))
+function ndmi(x::T) where {T <: AbstractSatellite}
+    return ndmi(Raster(x, :nir), Raster(x, :swir1))
 end
 
 """
     nbri(nir::AbstractRaster, swir2::AbstractRaster)
-    nbri(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    nbri(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Burn Ratio Index.
 
@@ -120,21 +100,16 @@ NBRI is used to emphasize burned areas.
 NBRI = (nir - swir2) / (nir + swir2)
 """
 function nbri(nir::AbstractRaster, swir2::AbstractRaster)
-    return nbri(encode(nir, Float32), encode(swir2, Float32))
+    return _normalized_difference(nir, swir2)
 end
  
-function nbri(nir::AbstractRaster{Float32}, swir2::AbstractRaster{Float32})
-    index = (nir .- swir2) ./ (nir .+ swir2)
-    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
-end
-
-function nbri(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return nbri(nir(stack, T), swir2(stack, T))
+function nbri(x::T) where {T <: AbstractSatellite}
+    return nbri(Raster(x, :nir), Raster(x, :swir2))
 end
 
 """
     ndbi(swir1::AbstractRaster, nir::AbstractRaster)
-    ndbi(stack::AbstractRasterStack, ::Type{AbstractBandset})
+    ndbi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the The Normalized Difference Built-up Index
 
@@ -143,14 +118,18 @@ NDBI is used to emphasize urban and built-up areas.
 NDBI = (swir1 - nir) / (swir1 + nir)
 """
 function ndbi(swir1::AbstractRaster, nir::AbstractRaster)
-    return ndbi(encode(swir1, Float32), encode(nir, Float32))
+    return _normalized_difference(swir1, nir)
 end
  
-function ndbi(swir1::AbstractRaster{Float32}, nir::AbstractRaster{Float32})
-    index = (swir1 .- nir) ./ (swir1 .+ nir)
-    return mask(index; with=nir, missingval=-Inf32) |> _drop_nan
+function ndbi(x::T) where {T <: AbstractSatellite}
+    return ndbi(Raster(x, :swir1), Raster(x, :nir))
 end
 
-function ndbi(stack::AbstractRasterStack, ::Type{T}) where {T <: AbstractBandset}
-    return ndbi(swir1(stack, T), nir(stack, T))
+function _normalized_difference(a::AbstractRaster, b::AbstractRaster)
+    return _normalized_difference(Float32.(a), Float32.(b))
+end
+
+function _normalized_difference(a::AbstractRaster{Float32}, b::AbstractRaster{Float32})
+    norm_diff = rebuild((a .- b) ./ (a .+ b), missingval=Inf32)
+    return @pipe mask!(norm_diff; with=a) |> RemoteSensingToolbox.mask_nan!
 end

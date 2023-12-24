@@ -91,23 +91,3 @@ end
 function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
     return map(x -> mask_pixels!(x, mask; kwargs...), raster)
 end
-
-"""
-    encode(raster::AbstractRaster, type; missingval=typemax(type))
-
-
-Encodes a raster into the provided type.
-
-# Parameters
-- `raster`: The `AbstractRaster` or `AbstractRasterStack` to be encoded.
-- `type`: The type to encode as. Common values include `UInt16`, `Int16`, and `Float32`.
-- `missingval`: The value to use to denote missing pixels. Set to the maximum value of `type` by default.
-"""
-function encode(raster::AbstractRaster, type; missingval=typemax(type))
-    new_raster = @pipe rebuild(raster, missingval=missingval) |> clamp.(_, typemin(type), typemax(type)) |> Rasters.mask!(_; with=raster)
-    return type <: Integer ? round.(type, new_raster) : type.(new_raster)
-end
-
-function encode(raster::AbstractRasterStack, type; kwargs...)
-    return map(x -> encode(x, type; kwargs...), raster)
-end

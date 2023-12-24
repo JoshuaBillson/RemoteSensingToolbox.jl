@@ -3,12 +3,12 @@ function _centralize(raster, μ::AbstractVector)
 end
 
 function _centralize(raster::AbstractRaster, μ::AbstractVector{Float32})
-    return @pipe raster .- reshape(μ, (1,1,:)) |> Rasters.mask!(_, with=raster)
+    return @pipe raster .- reshape(μ, (1,1,:)) |> RemoteSensingToolbox.mask!(_, raster)
 end
 
 function _centralize(raster::AbstractRasterStack, μ::AbstractVector{Float32})
     _map_index(raster) do i, x
-        @pipe x .- μ[i] |> Rasters.mask!(_, with=x)
+        @pipe x .- μ[i] |> RemoteSensingToolbox.mask!(_, x)
     end
 end
 

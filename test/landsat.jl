@@ -5,7 +5,7 @@ landsat = read_bands(Landsat8, "data/landsat/")
 
 # Test Visualization
 for color in [TrueColor, Agriculture, ColorInfrared, Geology, SWIR]
-    @test visualize(landsat, color{Landsat8}) isa AbstractArray{RGB{N0f8}}
+    @test visualize(color{Landsat8}, landsat) isa AbstractArray{RGB{N0f8}}
 end
 
 # Test DN to Reflectance
@@ -15,7 +15,7 @@ end
 # Test Indices
 landsat_sr =  @pipe dn_to_reflectance(Landsat8, landsat; clamp_values=true) |> encode(_, Float64)
 for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
-    result = index(landsat_sr, Landsat8)
+    result = index(Landsat8, landsat_sr)
     @test result isa AbstractArray{Float32}
     @test (result |> skipmissing |> maximum) <= 1.0f0
     @test (result |> skipmissing |> minimum) >= -1.0f0

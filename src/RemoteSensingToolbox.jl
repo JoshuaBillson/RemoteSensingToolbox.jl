@@ -1,44 +1,41 @@
 module RemoteSensingToolbox
 
-import ArchGDAL
 import ImageCore
 import Tables
 import TableOperations
-using OrderedCollections
+import LinearAlgebra
+import Random
+import ArchGDAL
+
 using Rasters
 using Statistics
 using DocStringExtensions
-using ReadableRegex
+using DataFrames
+using Bijections
+
 using Pipe: @pipe
+using Reexport: @reexport
+
+@reexport using SatelliteDataSources
+
+const RasterOrStack = Union{<:AbstractRasterStack, <:AbstractRaster}
 
 include("utils.jl")
 
-include("raster_table.jl")
-
-include("Bandsets/Bandsets.jl")
-
-using .Bandsets
-
-include("indices.jl")
-
 include("preprocessing.jl")
-
-include("Transformations/Transformations.jl")
-
-using .Transformations
-
-include("Spectral/Spectral.jl")
-
-using .Spectral
 
 include("visualization.jl")
 
-# Export RasterTable
-export RasterTable, dropmissing!, dropmissing, layers, cols, nonmissing, transform_column!, fold_rows
+include("indices.jl")
 
-# Export Bandsets
-export AbstractBandset, Landsat8, Landsat7, Sentinel2, DESIS
-export red, green, blue, nir, swir1, swir2, bands, wavelengths, wavelength, read_bands, read_qa, dn_to_reflectance, parse_band
+include("pca.jl")
+
+include("spectral_analysis.jl")
+
+#include("Spectral/Spectral.jl")
+
+#using .Spectral
+
 
 # Export visualization
 export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
@@ -47,7 +44,7 @@ export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 # Export Spectral
-export extract_signatures, summarize_signatures, plot_signatures, plot_signatures!
+export extract_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
 export tocube, create_tiles, mask_pixels, mask_pixels!, encode
