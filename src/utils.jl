@@ -35,6 +35,18 @@ function efficient_read(r::AbstractRasterStack)
     return map(x -> efficient_read(x), r)
 end
 
+function ignore_missing(f::Function, raster::AbstractRaster)
+    mask!(f(raster); with=raster)
+end
+
+function ignore_missing(f::Function, raster::AbstractRasterStack)
+    new_raster = f(raster)
+    for layer in names(raster)
+        mask!(new_raster[layer]; with=raster[layer])
+    end
+    return new_raster
+end
+
 """
     mask_nan!(raster)
 
@@ -80,10 +92,17 @@ julia> table(rs, DataFrame) |> dropmissing!
                                              40540168 rows omitted
 ```
 """
-function table(raster::Union{<:AbstractRaster, <:AbstractRasterStack}, sink=Tables.columntable)
+function table(raster::AbstractRaster, sink=Tables.columntable)
     return @pipe replace_missing(raster) |> 
     efficient_read |> 
     DimTable(_, mergedims=(X,Y)=>:geometry, layersfrom=Rasters.Band) |> 
+    sink
+end
+
+function table(raster::AbstractRasterStack, sink=Tables.columntable)
+    return @pipe replace_missing(raster) |> 
+    efficient_read |> 
+    DimTable(_, mergedims=(X,Y)=>:geometry) |> 
     sink
 end
 
