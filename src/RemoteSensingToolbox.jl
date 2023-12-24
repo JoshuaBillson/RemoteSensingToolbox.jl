@@ -5,17 +5,20 @@ import Tables
 import TableOperations
 import LinearAlgebra
 import Random
+import ArchGDAL
 
-using OrderedCollections
 using Rasters
 using Statistics
 using DocStringExtensions
 using DataFrames
+using Bijections
 
 using Pipe: @pipe
 using Reexport: @reexport
 
 @reexport using SatelliteDataSources
+
+const RasterOrStack = Union{<:AbstractRasterStack, <:AbstractRaster}
 
 include("utils.jl")
 
@@ -26,6 +29,8 @@ include("visualization.jl")
 include("indices.jl")
 
 include("pca.jl")
+
+include("spectral_analysis.jl")
 
 #include("Spectral/Spectral.jl")
 
@@ -39,7 +44,7 @@ export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 
 # Export Spectral
-export extract_signatures, summarize_signatures, plot_signatures, plot_signatures!
+export extract_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
 export tocube, create_tiles, mask_pixels, mask_pixels!, encode
