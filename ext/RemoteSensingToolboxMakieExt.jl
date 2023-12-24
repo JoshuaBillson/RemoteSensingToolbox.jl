@@ -1,10 +1,20 @@
 module RemoteSensingToolboxMakieExt
 
-using RemoteSensingToolbox, CairoMakie, Rasters, Statistics
+using RemoteSensingToolbox, CairoMakie, DataFrames
 using Pipe: @pipe
 import Tables
 
-function RemoteSensingToolbox.plot_signatures(bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=Makie.wong_colors())
+const RST = RemoteSensingToolbox
+
+function RST.plot_signatures(satellite::Type{<:AbstractSatellite}, sigs; kwargs...)
+    # Construct Bandset
+    bandset = [b => w for (b, w) in zip(bands(satellite), wavelengths(satellite))]
+
+    # Plot Signatures
+    RST.plot_signatures(bandset, sigs; kwargs...)
+end
+
+function RST.plot_signatures(bandset::Vector{Pair{Symbol, Int}}, sigs; kwargs...)
     # Create Figure
     fig = Figure(resolution=(1000,500))
 
@@ -20,7 +30,7 @@ function RemoteSensingToolbox.plot_signatures(bandset::Type{<:AbstractBandset}, 
     )
     
     # Plot Signatures
-    RemoteSensingToolbox.plot_signatures!(ax, bandset, raster, shp, label; colors=colors)
+    RST.plot_signatures!(ax, bandset, sigs; kwargs...)
 
     # Add Legend
     Legend(fig[1,2], ax, "Classification")
@@ -29,26 +39,31 @@ function RemoteSensingToolbox.plot_signatures(bandset::Type{<:AbstractBandset}, 
     return fig
 end
 
-function RemoteSensingToolbox.plot_signatures!(ax, bandset::Type{<:AbstractBandset}, raster::AbstractRasterStack, shp, label::Symbol; colors=Makie.wong_colors())
-    # Extract Signatures
-    extracted = @pipe RemoteSensingToolbox.extract_signatures(raster, shp, label) |> RemoteSensingToolbox.fold_rows(mean, _, :label)
+function RST.plot_signatures!(ax, satellite::Type{<:AbstractSatellite}, sigs; kwargs...)
+    # Construct Bandset
+    bandset = [b => w for (b, w) in zip(bands(satellite), wavelengths(satellite))]
 
     # Plot Signatures
-    RemoteSensingToolbox.plot_signatures!(ax, bandset, extracted, :label, colors)
+    RST.plot_signatures!(ax, bandset, sigs; kwargs...)
 end
 
-function RemoteSensingToolbox.plot_signatures!(ax, bandset::Type{<:AbstractBandset}, sigs, labelcolumn::Symbol, colors)
+function RST.plot_signatures!(ax, bandset::Vector{Pair{Symbol, Int}}, sigs; colors=Makie.wong_colors(), label=:label)
     # Extract Signatures
-    cols = Tables.columnnames(sigs)
-    bs = filter(x -> x in cols, bands(bandset))
-    sig_matrix = hcat([Tables.getcolumn(sigs, b) for b in bs]...)
+    x, y = _sigs_to_xy(bandset, sigs)
 
     # Plot Signatures
-    xs = [wavelength(bandset, b) for b in bs]
-    labels = Tables.getcolumn(sigs, labelcolumn)
-    for i in 1:size(sig_matrix,1)
-        lines!(ax, xs, sig_matrix[i,:], label=labels[i]; color=colors[i])
-    end
+    series!(ax, x, y, color=colors, labels=Tables.getcolumn(sigs, label))
 end
 
+function _sigs_to_xy(bandset::Vector{<:Pair}, sigs)
+    return _sigs_to_xy(bandset, DataFrame(sigs))
+end
+
+function _sigs_to_xy(bandset::Vector{<:Pair}, sigs::DataFrame)
+    bands = map(first, bandset)
+    columns = Tables.columnnames(sigs)
+    x = [wavelength for (band, wavelength) in bandset if band in columns]
+    y = reduce(hcat, Vector(sigs[:,band]) for band in bands if band in columns)
+    return x, y
+end
 end
