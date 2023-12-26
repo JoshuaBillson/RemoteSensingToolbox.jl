@@ -8,54 +8,55 @@ CurrentModule = RemoteSensingToolbox
 
 ```julia
 using RemoteSensingToolbox, Rasters
-using Pipe: @pipe
 
-landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
+stack = RasterStack(src, lazy=true)
 ```
 
 Now let's visualize our data to see what we're working with. This is where the power of `AbstractBandset` can first be demonstrated. To view a true color composite of the data, we need to know the bands corresponding to red, green, and blue. However, it would be tedious to memorize and manually specify this information whenever we want to call a method which relies on a specific combination of bands. Fortunately, all `AbstractBandset` types know this information implicitly, so all we need to do is pass in `Landsat8` as a parameter to `TrueColor`.
 
 ```julia
-visualize(landsat, TrueColor{Landsat8}; upper=0.90)
+visualize(TrueColor{Landsat8}, stack; upper=0.90)
 ```
 
-![](figures/true_color.png)
+![](figures/true_color.jpg)
 
 You may have noticed that we provided an additional argument `upper` to the `visualize` method. This parameter controls the upper quantile to be used when performing histogram stretching to make the imagery interpretable to humans. This parameter is set to 0.98 by default, but because our scene contains a significant number of bright clouds, we need to lower it to prevent the image from appearing too dark. We can remove these clouds by first loading the Quality Assurance (QA) mask that came with our landsat product and then calling `mask_pixels`.
 
 ```julia
-qa = read_qa(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+# Mask Clouds
+cloud_mask = Raster(src, :clouds)
+shadow_mask = Raster(src, :cloud_shadow)
+raster_mask = .!(boolmask(cloud_mask) .|| boolmask(shadow_mask))
+masked = mask(stack, with=raster_mask)
 
-masked_landsat = @pipe mask_pixels(landsat, qa[:cloud]) |> mask_pixels(_, qa[:cloud_shadow])
-
-visualize(masked_landsat, TrueColor{Landsat8})
+# Visualize in True Color
+visualize(TrueColor{Landsat8}, masked)
 ```
 
-![](figures/masked.png)
+![](figures/masked.jpg)
 
 Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to distinguish regions with healthy vegetation, which appear as various shades of green.
 
 ```julia
-visualize(landsat, Agriculture{Landsat8}; upper=0.90)
+visualize(Agriculture{Landsat8}, stack; upper=0.90)
 ```
-![](figures/agriculture.png)
-
-We can also convert Digital Numbers (DNs) to reflectance by calling `dn_to_reflectance` and passing in the appropriate bandset.
-
-```julia
-landsat_sr = dn_to_reflectance(Landsat8, landsat)
-```
+![](figures/agriculture.jpg)
 
 We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.
 
 ```julia
-roi = @view landsat_sr[X(5800:6800), Y(2200:3200)]
+# Calculate Indices
+indices = (mndwi=mndwi(src), ndvi=ndvi(src), ndmi=ndmi(src))
 
-true_color = visualize(roi, TrueColor{Landsat8}; upper=0.998)
+# Extract Region of Interest
+stack = merge(stack, indices)
+roi = @view stack[X(5800:6800), Y(2200:3200)]
 
-index = mndwi(roi, Landsat8) |> visualize
-
-mosaicview(true_color, index; npad=5, fillvalue=0.0, ncol=2)
+# Visualize
+true_color = visualize(TrueColor{Landsat8}, roi; upper=0.998)
+index_imgs = [visualize(roi[i]) for i in (:mndwi, :ndvi, :ndmi)]
+mosaicview(true_color, index_imgs...; npad=10, fillvalue=0.0, ncol=2, rowmajor=true)
 ```
 
-![](figures/patches.png)
+![](figures/indices.jpg)

@@ -6,7 +6,9 @@ using Documenter
 DocMeta.setdocmeta!(RemoteSensingToolbox, :DocTestSetup, :(using RemoteSensingToolbox); recursive=true)
 
 makedocs(;
-    modules=[RemoteSensingToolbox, RemoteSensingToolbox.Bandsets, RemoteSensingToolbox.Spectral, RemoteSensingToolbox.Transformations],
+    modules=[RemoteSensingToolbox, SatelliteDataSources],
+    checkdocs=:exports,
+    warnonly=true, 
     authors="Joshua Billson",
     repo="https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/{commit}{path}#{line}",
     sitename="RemoteSensingToolbox.jl",
