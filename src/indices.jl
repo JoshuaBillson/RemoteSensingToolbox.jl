@@ -1,6 +1,6 @@
 """
+    mndwi(src::AbstractSatellite)
     mndwi(green::AbstractRaster, swir::AbstractRaster)
-    mndwi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Modified Normalised Difference Water Index (Xu 2006).
 
@@ -15,8 +15,8 @@ function mndwi(x::T) where {T <: AbstractSatellite}
 end
 
 """
+    ndwi(src::AbstractSatellite)
     ndwi(green::AbstractRaster, nir::AbstractRaster)
-    ndwi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Water Index (McFeeters 1996).
 
@@ -31,8 +31,8 @@ function ndwi(x::T) where {T <: AbstractSatellite}
 end
 
 """
+    ndvi(src::AbstractSatellite)
     ndvi(nir::AbstractRaster, red::AbstractRaster)
-    ndvi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Vegetation Index.
 
@@ -47,33 +47,43 @@ function ndvi(x::T) where {T <: AbstractSatellite}
 end
 
 """
-    savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
-    savi(stack::AbstractRasterStack, ::Type{AbstractBandset}; L=0.33)
+    savi(src::AbstractSatellite; L=0.33)
+    savi(nir::AbstractRaster, red::AbstractRaster; L=0.33, scale=1.0, offset=0.0)
 
 Compute the Soil Adjusted Vegetation Index (Huete 1988).
 
 SAVI is a vegetation index which attempts to minimize soil brightness influences by introducing a soil-brightness correction factor (L).
 
-L represents the amount of green vegetation cover, which is set to 0.33 by default.
-
 SAVI = ((nir - red) / (nir + red + L)) * (1 + L)
+
+# Keywords
+- `L`: The ammount of vegetative cover, where 1.0 means no vegetation and 0.0 means high vegetation.
+- `scale`: The scaling factor to convert digital numbers to reflectance.
+- `offset`: The offset to convert digital numbers to reflectance.
 """
-function savi(nir::AbstractRaster, red::AbstractRaster; L=0.33)
-    return savi(Float32.(nir), Float32.(red); L=L)
+function savi(nir::AbstractRaster, red::AbstractRaster; kwargs...)
+    return savi(Float32.(nir), Float32.(red); kwargs...)
 end
  
-function savi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32}; L=0.33)
-    norm_diff = @pipe ((nir .- red) ./ (nir .+ red .+ Float32(L))) .* (1.0f0 + Float32(L)) |> rebuild(_, missingval=Inf32)
-    return @pipe mask!(norm_diff, with=nir) |> RemoteSensingToolbox.mask_nan!
+function savi(nir::AbstractRaster{Float32}, red::AbstractRaster{Float32}; L=0.33, scale=1.0, offset=0.0)
+    # Convert DNs to Reflectance
+    nir_sr = @pipe ((nir .* Float32(scale)) .+ Float32(offset)) |> clamp!(_, 0.0f0, 1.0f0)
+    red_sr = @pipe ((red .* Float32(scale)) .+ Float32(offset)) |> clamp!(_, 0.0f0, 1.0f0)
+
+    # Calculate SAVI
+    norm_diff = ((nir_sr .- red_sr) ./ (nir_sr .+ red_sr .+ Float32(L))) .* (1.0f0 + Float32(L))
+    return @pipe mask!(norm_diff, with=nir, missingval=Inf32) |> RemoteSensingToolbox.mask_nan!
 end
 
-function savi(x::T; L=0.33) where {T <: AbstractSatellite}
-    return savi(Raster(x, :nir), Raster(x, :red); L=L)
+function savi(x::T; L=0.33, kwargs...) where {T <: AbstractSatellite}
+    nir = Raster(x, :nir)
+    red = Raster(x, :red)
+    return savi(nir, red; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
 end
 
 """
+    ndmi(src::AbstractSatellite)
     ndmi(nir::AbstractRaster, swir1::AbstractRaster)
-    ndmi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Difference Moisture Index.
 
@@ -90,8 +100,8 @@ function ndmi(x::T) where {T <: AbstractSatellite}
 end
 
 """
+    nbri(src::AbstractSatellite)
     nbri(nir::AbstractRaster, swir2::AbstractRaster)
-    nbri(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the Normalized Burn Ratio Index.
 
@@ -108,8 +118,8 @@ function nbri(x::T) where {T <: AbstractSatellite}
 end
 
 """
+    ndbi(src::AbstractSatellite)
     ndbi(swir1::AbstractRaster, nir::AbstractRaster)
-    ndbi(::Type{AbstractBandset}, stack::AbstractRasterStack)
 
 Compute the The Normalized Difference Built-up Index
 

@@ -1,12 +1,12 @@
 """
     function extract_signatures([agg], raster, shp, label::Symbol)
 
-Extract signatures from the given `RasterStack` within regions specified by a provided shapefile.
+Extract signatures from a `Raster` or `RasterStack` within regions specified by a provided shapefile.
 
 # Parameters
 - `agg`: A function to aggregate signatures belonging to the same class (ex. `mean`, `median`, `maximum`).
 - `raster`: An `AbstractRaster` or `AbstractRasterStack` from which to extract the spectral signatures.
-- `shp`: A table with a `:geometry` column of `GeoInterface.jl` geometries and a label column indicating the land cover type.
+- `shp`: A table with a `:geometry` column of `GeoInterface.jl` geometries and land cover labels.
 - `label`: The column in `shp` corresponding to the land cover type.
 
 # Returns

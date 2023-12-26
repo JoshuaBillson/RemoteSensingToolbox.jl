@@ -1,18 +1,18 @@
 abstract type AbstractCombination{T<:AbstractSatellite} end
 
-"""True color band composite."""
+"""The true color band combination produces RGB images that are familiar to the human eye."""
 struct TrueColor{T} <: AbstractCombination{T} end
 
-"""Color infrared band composite."""
+"""Highlights vegetation in red, water in blue, and urban areas in grey."""
 struct ColorInfrared{T} <: AbstractCombination{T} end
 
-"""SWIR band composite."""
+"""Emphasizes dense vegetation in dark green and sparse vegetation in lighter shades."""
 struct SWIR{T} <: AbstractCombination{T} end
 
-"""Agriculture band composite."""
+"""Used for crop monitoring and emphasizing healthy vegetation."""
 struct Agriculture{T} <: AbstractCombination{T} end
 
-"""Geology band composite."""
+"""Emphasizes geological formations, lithology features, and faults."""
 struct Geology{T} <: AbstractCombination{T} end
 
 """
@@ -35,7 +35,6 @@ stack = RasterStack(src, lazy=true)
 # Display True Color Image
 img = visualize(TrueColor{Landsat8}, stack; upper=0.90)
 FileIO.save("truecolor.jpg", img)
-```
 ```
 """
 function visualize(r::AbstractRaster, g::AbstractRaster, b::AbstractRaster; lower=0.02, upper=0.98)

@@ -1,7 +1,7 @@
 using RemoteSensingToolbox, Test, SafeTestsets
 using Pipe: @pipe
 
-#@safetestset "Landsat" begin include("landsat.jl") end
+@safetestset "Indices" begin include("indices.jl") end
 
 #@safetestset "Sentinel" begin include("sentinel.jl") end
 
