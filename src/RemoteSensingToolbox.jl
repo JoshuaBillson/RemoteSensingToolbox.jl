@@ -32,11 +32,6 @@ include("pca.jl")
 
 include("spectral_analysis.jl")
 
-#include("Spectral/Spectral.jl")
-
-#using .Spectral
-
-
 # Export visualization
 export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
 
@@ -47,7 +42,7 @@ export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 export extract_signatures, plot_signatures, plot_signatures!
 
 # Export Preprocessing
-export tocube, create_tiles, mask_pixels, mask_pixels!, encode
+#export tocube, create_tiles, mask_pixels, mask_pixels!, encode
 
 # Export Transformations
 export PCA, MNF, fit_pca, forward_pca, inverse_pca, fit_mnf, forward_mnf, inverse_mnf
