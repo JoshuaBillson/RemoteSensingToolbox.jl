@@ -110,7 +110,8 @@ Return the estimated SNR associated with each principal components of the fitted
 """
 function snr(x::MNF)
     P = projection(x)
-    ([P[:,i]' * (x.data_cov * P[i,:]) for i in 1:235] ./ [P[:,i]' * (x.noise_cov * P[i,:]) for i in 1:235]) .- 1
+    n = size(P, 1)
+    ([P[:,i]' * (x.data_cov * P[i,:]) for i in 1:n] ./ [P[:,i]' * (x.noise_cov * P[i,:]) for i in 1:n]) .- 1
 end
 
 """
@@ -164,8 +165,40 @@ Fit a Minimum Noise Fraction (MNF) transformation to the given `AbstractRasterSt
 - `noise_sample`: A homogenous (spectrally uniform) region extracted from `raster` for calculating the noise covariance matrix.
 - `smooth`: The MNF transform cannot be computed if any band in `noise_sample` has zero variance. To correct this, you may wish to introduce a small smoothing term (true by default).
 """
-function fit_mnf(raster::Union{<:AbstractRasterStack, <:AbstractRaster},  noise_sample::Union{<:AbstractRasterStack, <:AbstractRaster}; smooth=true)
-    return @pipe RasterTable(raster) |> dropmissing |> Tables.matrix |> _fit_mnf(_, noise_sample, Symbol[], smooth)
+function fit_mnf(raster::RasterOrStack,  noise_covariance::Matrix; stats_fraction=1.0)
+    signatures = sample(raster; fraction=stats_fraction) |> Tables.matrix .|> Float32
+    return fit_mnf(signatures, noise_covariance; stats_fraction=1.0)
+end
+
+function fit_mnf(signatures::Matrix, noise_covariance::Matrix; kwargs...)
+    return fit_mnf(Float32.(signatures), Float32.(noise_covariance); kwargs...)
+end
+
+function fit_mnf(signatures::Matrix{Float32}, noise_covariance::Matrix{Float32}; stats_fraction=1.0)
+    # Draw Sample
+    n = size(signatures, 1)
+    n_samples = round(Int, n * stats_fraction)
+    samples = Random.randperm(n)[1:n_samples]
+    X = @view signatures[samples,:]
+
+    # Compute Renormalization Matrix To Whiten Noise
+    λ, E = _eigen(noise_covariance)
+    F = E * (LinearAlgebra.Diagonal(λ .^ -0.5))
+
+    # Compute Data Covariance
+    Σ = Statistics.cov(X)
+
+    # Normalize Data Covariance
+    Σ_normalized = F' * Σ * F
+    
+    # Compute Eigenvalues and Eigenvectors of Covariance/Correlation Matrix
+    λ, G = _eigen(Σ_normalized)
+
+    # Get Projection Matrix
+    H = F * G
+
+    # Return MNF Transform
+    return MNF(Float32.(noise_covariance), Float32.(Σ), Float32.(H), Float32.(λ))
 end
 
 """
@@ -181,20 +214,21 @@ Perform a forward Minimum Noise Fraction (MNF) rotation on the given raster or s
 - `components`: The number of bands to retain in the transformed image. All band numbers exceeding this value will be discarded.
 """
 function forward_mnf(transformation::MNF, raster::AbstractRasterStack, components::Int)
-    return forward_mnf(transformation, tocube(raster), components)
+    return forward_mnf(transformation, Raster(raster), components)
 end
 
 function forward_mnf(transformation::MNF, raster::AbstractRaster, components::Int)
     # Project To New Axes
-    transformed = 
-        @pipe raster.data |> 
-        reshape(_, (:, size(raster, Rasters.Band))) |> 
-        forward_mnf(transformation, _, components) |> 
-        reshape(_, (size(raster, 1), size(raster, 2), components)) |> 
-        _copy_dims(_, raster)
-
+    transformed = @pipe raster |>
+        Rasters.replace_missing(_, 0) |>  # Replace Missing Values with Zero
+        reshape(_.data, (:, nbands(raster))) |>  # Reshape Data Into a Matrix
+        forward_mnf(transformation, _, components) |>  # Project to new Coordinates
+        reshape(_, (size(raster, 1), size(raster, 2), components)) |>  # Restore Shape of Raster
+        Rasters.Raster(_, (Rasters.dims(raster)[1:2]..., Rasters.Band))  # Restore Raster Dimensions
+    
     # Mask Missing Values
-    return @pipe rebuild(transformed, missingval=eltype(transformed)) |> RemoteSensingToolbox.mask!(_, (@view raster[Rasters.Band(1)]))
+    bmask = Rasters.boolmask(@view raster[Rasters.Band(1)])
+    return mask!(transformed, with=bmask, missingval=Inf32)
 end
 
 function forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
@@ -220,19 +254,18 @@ function inverse_mnf(transformation::MNF, raster::AbstractRaster)
     # Check Arguments
     1 <= nbands(raster) <= size(projection(transformation), 1) || throw(ArgumentError("nbands(raster) must be less than or equal to the number of bands in the original image!"))
 
-    # Invert Transformation
-    outdim = (size(raster.data)[1:2]..., size(projection(transformation), 1))
-    restored = @pipe reshape(raster.data, (:, size(raster, Rasters.Band))) |> inverse_mnf(transformation, _) |> reshape(_, outdim)
-
-    # Write Results Into a Raster
-    restored_raster = _copy_dims(restored, raster)
+    # Invert Projection
+    P = projection(transformation)
+    restored = @pipe raster |>
+        replace_missing(_, 0) |>  # Replace Missing Values with Zero
+        reshape(_.data, (:, nbands(raster))) |>  # Reshape Raster Into a Matrix
+        inverse_mnf(transformation, _) |>  # Reverse Transformation
+        reshape(_, (size(raster)[1:2]..., size(P, 1))) |>  # Restore Shape of Raster
+        Raster(_, (dims(raster)[1:2]..., Rasters.Band))  # Restore Raster Dimensions
 
     # Mask Missing Values
-    restored_raster = rebuild(restored_raster, missingval=typemax(eltype(restored_raster)))
-    RemoteSensingToolbox.mask!(restored_raster, (@view raster[Rasters.Band(1)]))
-
-    # Restore Band Names
-    return restored_raster
+    bmask = boolmask(@view raster[Rasters.Band(1)])
+    return mask!(restored, with=bmask, missingval=Inf32)
 end
 
 function inverse_mnf(transformation::MNF, sigs::Matrix)
@@ -249,63 +282,66 @@ function inverse_mnf(transformation::MNF, sigs::Matrix{Float32})
     return sigs * D
 end
 
-function _compute_diff(raster::AbstractRaster; smooth=false)
+"""
+    estimate_noise(raster::Union{<:AbstractRaster, <:AbstractRasterStack}; smooth=false)
+
+Estimate the noise covariance matrix for the given raster.
+
+Uses the Minimum/Maximum Autocorrelation Factor proposed by [Switzer and Green](https://www.researchgate.net/publication/239665649_MinMax_Autocorrelation_factors_for_multivariate_spatial_imagery_Technical_Report_6).
+
+For best results, the provided raster should be spectrally homoegenous (e.g., an open field or body of water).
+
+# Parameters
+- `raster`: An `AbstractRaster` or `AbstractRasterStack`.
+- `smooth`: Numerical stability requires that no bands have a variance of zero. A smoothing term can be applied to ensure that this is the case.
+"""
+function estimate_noise(raster::RasterOrStack; smooth=false)
+    residuals = _compute_residuals(raster, smooth)
+    return _compute_ncm(residuals)
+end
+
+function _compute_residuals(raster::AbstractRasterStack, smooth::Bool)
+    return _compute_residuals(Rasters.Raster(efficient_read(raster)), smooth)
+end
+
+function _compute_residuals(raster::AbstractRaster, smooth::Bool)
+    return @pipe raster |> Float32.(_) |> Rasters.replace_missing!(_, Inf32) |> _compute_residuals(_, smooth)
+end
+
+function _compute_residuals(raster::AbstractRaster{Float32}, smooth::Bool)
     # Extract (0, 1) Offset Views
     height = size(raster, Rasters.Y)
     r1 = @view raster[Rasters.Y(1:height-1)]
     r2 = @view raster[Rasters.Y(2:height)]
 
     # Prepare Smoothing Term
-    t = eltype(raster)
     s = size(r1)
-    smoothing = smooth ? (t <: Integer ? rand(t.([0, 1]), s) : rand(t.([0.0, 0.0001]), s)) : zeros(t, s)
+    smoothing = smooth ? rand([0.0f0, 0.0001f0], s) : zeros(Float32, s)
 
     # Compute Diff
     diff = r1 .- r2
     diff .+= smoothing
-    return diff
+
+    # Mask Missing
+    m = Rasters.boolmask(r1) .&& Rasters.boolmask(r2)
+    Rasters.mask!(diff, with=m)
+
+    # Return Residuals
+    return table(diff, DataFrame)[!,Not(:geometry)] |> dropmissing! |> Tables.matrix
 end
 
-function _compute_diff(raster::AbstractRasterStack; smooth=false)
-    return map(x -> _compute_diff(x, smooth=smooth), raster)
+function _compute_ncm(residuals::Matrix)
+    return _compute_ncm(Float32.(residuals))
 end
 
-function _compute_ncm(raster::Union{<:AbstractRasterStack, <:AbstractRaster}; smooth=false)
+function _compute_ncm(residuals::Matrix{Float32})
     # Compute Covariance Of Noise
-    Σ = _compute_diff(raster, smooth=smooth) |> RasterTable |> Tables.matrix .|> Float64 |> cov
+    Σ = Statistics.cov(residuals)
     Σ .*= 0.5
 
     # Check If Any Variances Are Zero
-    @assert all([Σ[i,i] for i in axes(Σ)[1]] .!= 0) "Zero variance encountered in noise estimate! Set smooth=true to fix this error."
+    @assert all(LinearAlgebra.diag(Σ) .!= 0) "Zero variance encountered in noise estimate! Set smooth=true to fix this error."
 
     # Return NCM
     return Σ
-end
-
-function _fit_mnf(data::Matrix{Float64}, noise_sample, bands, smooth)
-    # Compute NCM
-    Σₙ = _compute_ncm(noise_sample; smooth=smooth)
-
-    # Compute Renormalization Matrix To Whiten Noise
-    λ, E = _eigen(Σₙ)
-    F = E * (LinearAlgebra.Diagonal(λ .^ -0.5))
-
-    # Compute Data Covariance
-    Σ = cov(data)
-
-    # Normalize Data Covariance
-    Σ_normalized = F' * Σ * F
-    
-    # Compute Eigenvalues and Eigenvectors of Covariance/Correlation Matrix
-    λ_data, G = _eigen(Σ_normalized)
-
-    # Get Projection Matrix
-    H = F * G
-
-    # Return MNF Transform
-    return MNF(Float32.(Σₙ), Float32.(Σ), Float32.(H), Float32.(λ_data))
-end
-
-function _fit_mnf(data::Matrix, noise_sample, bands, smooth)
-    return _fit_mnf(Float64.(data), noise_sample, bands, smooth)
 end

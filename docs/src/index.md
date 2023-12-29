@@ -111,13 +111,28 @@ plot_signatures!
 
 Principal Component Analysis (PCA) is typically used to reduce the dimensionality of data. In the case of remote sensing, we are interested in reducing the number of bands we need to store while retaining as much information as possible. PCA rotates the bands into a new coordinate space where each band, called a principal component, is orthogonal to and uncorrelated with every other component. By convention, we order the bands in the transformed image in terms of their explained variance, such that the nth component accounts for more variance than any component after it.
 
-```@docs
-PCA
-fit_pca
-forward_pca
-inverse_pca
-projection
-explained_variance
-cumulative_variance
+```@autodocs
+Modules = [RemoteSensingToolbox]
+Pages = ["pca.jl"]
+Private = false
 ```
 
+# Minimum Noise Fraction
+
+The Minimum Noise Fraction (MNF) transformation is used to separate noise from data along the spectral dimension. This method is typically used with hyperspectral imagery, both as a means of dimension reduction and for noise removal. The transformed image will have its bands placed in descending order according to their Signal to Noise Ratio (SNR). The result is that the noise becomes concentrated in the higher bands, which can then be removed by either applying a standard image denoising algorithm or dropping them altogether.
+
+```@autodocs
+Modules = [RemoteSensingToolbox]
+Pages = ["mnf.jl"]
+Private = false
+```
+
+# Utilities
+
+`RemoteSensingToolbox` provides several utility functions for modifying and processing remotely sensed data.
+
+```@autodocs
+Modules = [RemoteSensingToolbox]
+Pages = ["utils.jl"]
+Private = false
+```

@@ -161,29 +161,42 @@ function sample(raster::Union{<:AbstractRaster, <:AbstractRasterStack}, sink; kw
     return sample(raster; kwargs...) |> sink
 end
 
-function mean(raster::Union{<:AbstractRaster, <:AbstractRasterStack}; fraction=0.1)
-    @pipe sample(raster, DataFrame; fraction=fraction) |> 
-    Tables.matrix |> 
-    Float32.(_) |> 
-    Statistics.mean(_, dims=1)
+"""
+    mask_pixels(raster, mask; invert_mask=false)
+
+Drop pixels from a raster according to a given mask. The mask and raster must have the same extent and size.
+
+# Parameters
+- `raster`: The raster to be masked.
+- `mask`: A mask defining which pixels we want to drop. By default, we drop pixels corresponding to mask values of `1`.
+- `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
+"""
+function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
+    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
+    return Rasters.mask(raster; with=rebuild(mask; missingval=missing_value))
 end
 
-function std(raster::Union{<:AbstractRaster, <:AbstractRasterStack})
-    return @pipe matrix(raster) |> Statistics.std(_, dims=1)
+function mask_pixels(raster::AbstractRasterStack, mask; kwargs...)
+    return map(x -> mask_pixels(x, mask; kwargs...), raster)
 end
 
-function cov(raster::Union{<:AbstractRaster, <:AbstractRasterStack}; fraction=0.1)
-    @pipe sample(raster, DataFrame; fraction=fraction) |> 
-    Tables.matrix |> 
-    Float64.(_) |> 
-    Statistics.cov(_)
+"""
+    mask_pixels!(raster, mask; invert_mask=false)
+
+Drop pixels from a raster according to a given mask. The mask and raster must have the same extent and size.
+
+# Parameters
+- `raster`: The raster to be masked.
+- `mask`: A mask defining which pixels we want to drop. By default, we drop pixels corresponding to mask values of `1`.
+- `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
+"""
+function mask_pixels!(raster::AbstractRaster, mask; invert_mask=false)
+    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
+    return Rasters.mask!(raster; with=rebuild(mask; missingval=missing_value))
 end
 
-function cor(raster::Union{<:AbstractRaster, <:AbstractRasterStack}; fraction=0.1)
-    @pipe sample(raster, DataFrame; fraction=fraction) |> 
-    Tables.matrix |> 
-    Float64.(_) |> 
-    Statistics.cor(_)
+function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
+    return map(x -> mask_pixels!(x, mask; kwargs...), raster)
 end
 
 function _copy_dims(data::AbstractArray{<:Number,3}, reference::AbstractRaster)
@@ -203,4 +216,9 @@ function _map_index(f::Function, raster::AbstractRasterStack)
         i += 1
         f(i, x)
     end
+end
+
+function _eigen(A)
+    eigs, vecs = LinearAlgebra.eigen(A)
+    return reverse(eigs), reverse(vecs, dims=2)
 end

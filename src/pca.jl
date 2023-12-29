@@ -228,8 +228,3 @@ function inverse_pca(transformation::PCA, signatures::Matrix{Float32})
     P = projection(transformation)[:,1:components]
     return (signatures * P') .+ reshape(transformation.mean, 1, :)
 end
-
-function _eigen(A)
-    eigs, vecs = LinearAlgebra.eigen(A)
-    return reverse(eigs), reverse(vecs, dims=2)
-end

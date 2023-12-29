@@ -22,13 +22,13 @@ const RasterOrStack = Union{<:AbstractRasterStack, <:AbstractRaster}
 
 include("utils.jl")
 
-include("preprocessing.jl")
-
 include("visualization.jl")
 
 include("indices.jl")
 
 include("pca.jl")
+
+include("mnf.jl")
 
 include("spectral_analysis.jl")
 
@@ -41,11 +41,11 @@ export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi
 # Export Spectral
 export extract_signatures, plot_signatures, plot_signatures!
 
-# Export Preprocessing
-#export tocube, create_tiles, mask_pixels, mask_pixels!, encode
+# Export PCA
+export PCA, fit_pca, forward_pca, inverse_pca, projection, cumulative_variance, explained_variance
 
-# Export Transformations
-export PCA, MNF, fit_pca, forward_pca, inverse_pca, fit_mnf, forward_mnf, inverse_mnf
-export noise_cov, data_cov, projection, eigenvalues, cumulative_eigenvalues, snr, cumulative_snr, cumulative_variance, explained_variance
+# Export MNF
+export MNF, fit_mnf, forward_mnf, inverse_mnf, estimate_noise
+export projection, noise_cov, data_cov, eigenvalues, cumulative_eigenvalues, snr, cumulative_snr
 
 end

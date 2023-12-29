@@ -20,9 +20,9 @@ transformed = forward_pca(pca, sentinel, 3)
 
 # Test Forward Transformation
 transformed = forward_pca(pca, sentinel, length(sentinel))
-@test size(transformed) == size(tocube(sentinel))
+@test size(transformed) == size(Raster(sentinel))
 
 # Test Inverse Transformation
 recovered = inverse_pca(pca, transformed)
 @test names(sentinel) == names(recovered)
-@test all(isapprox.(tocube(recovered).data, tocube(sentinel).data, atol=0.1))
+@test all(isapprox.(Raster(recovered).data, Raster(sentinel).data, atol=0.1))
