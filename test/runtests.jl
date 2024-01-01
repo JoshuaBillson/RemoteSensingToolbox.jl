@@ -3,9 +3,7 @@ using Pipe: @pipe
 
 @safetestset "Indices" begin include("indices.jl") end
 
-#@safetestset "Sentinel" begin include("sentinel.jl") end
-
-#@safetestset "PCA" begin include("pca.jl") end
+@safetestset "PCA" begin include("pca.jl") end
 
 @safetestset "Makie" begin include("makie.jl") end
 

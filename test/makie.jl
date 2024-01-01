@@ -27,7 +27,6 @@ shp = GeoDataFrames.read("data/landcover/landcover.shp")
 
 # Extract Signatures
 sigs = extract_signatures(mean, sentinel, shp, :MC_name) |> DataFrame
-println(sigs)
 
 # Should Throw Error Telling Us To Load CairoMakie
 @test_throws ErrorException plot_signatures(Sentinel2{60}, sigs)
