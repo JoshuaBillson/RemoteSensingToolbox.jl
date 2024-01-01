@@ -294,6 +294,21 @@ For best results, the provided raster should be spectrally homoegenous (e.g., an
 # Parameters
 - `raster`: An `AbstractRaster` or `AbstractRasterStack`.
 - `smooth`: Numerical stability requires that no bands have a variance of zero. A smoothing term can be applied to ensure that this is the case.
+
+# Example
+```julia
+using RemoteSensingToolbox, Rasters
+
+# Load Data
+src = DESIS("DESIS-HSI-L2A-DT0485529167_001-20220712T223540-V0220")
+desis = decode(DESIS, Raster(src, :Bands))
+
+# Extract Homogenous Region of Interest
+roi = desis[X(1019:1040), Y(550:590)]
+
+# Estimate Noise
+ncm = estimate_noise(roi, smooth=true)
+```
 """
 function estimate_noise(raster::RasterOrStack; smooth=false)
     residuals = _compute_residuals(raster, smooth)
