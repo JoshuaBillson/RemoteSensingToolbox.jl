@@ -1,5 +1,6 @@
 """
     mndwi(src::AbstractSatellite)
+    mndwi(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     mndwi(green::AbstractRaster, swir::AbstractRaster)
 
 Compute the Modified Normalised Difference Water Index (Xu 2006).
@@ -14,8 +15,13 @@ function mndwi(x::T) where {T <: AbstractSatellite}
     return mndwi(Raster(x, :green), Raster(x, :swir1))
 end
 
+function mndwi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return mndwi(raster[green_band(T)], raster[swir1_band(T)])
+end
+
 """
     ndwi(src::AbstractSatellite)
+    ndwi(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     ndwi(green::AbstractRaster, nir::AbstractRaster)
 
 Compute the Normalized Difference Water Index (McFeeters 1996).
@@ -30,8 +36,13 @@ function ndwi(x::T) where {T <: AbstractSatellite}
     return ndwi(Raster(x, :green), Raster(x, :nir))
 end
 
+function ndwi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return ndwi(raster[green_band(T)], raster[nir_band(T)])
+end
+
 """
     ndvi(src::AbstractSatellite)
+    ndvi(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     ndvi(nir::AbstractRaster, red::AbstractRaster)
 
 Compute the Normalized Difference Vegetation Index.
@@ -46,8 +57,13 @@ function ndvi(x::T) where {T <: AbstractSatellite}
     return ndvi(Raster(x, :nir), Raster(x, :red))
 end
 
+function ndvi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return ndvi(raster[nir_band(T)], raster[red_band(T)])
+end
+
 """
     savi(src::AbstractSatellite; L=0.33)
+    savi(::Type{AbstractSatellite}, stack::AbstractRasterStack; L=0.33)
     savi(nir::AbstractRaster, red::AbstractRaster; L=0.33, scale=1.0, offset=0.0)
 
 Compute the Soil Adjusted Vegetation Index (Huete 1988).
@@ -81,8 +97,13 @@ function savi(x::T; L=0.33, kwargs...) where {T <: AbstractSatellite}
     return savi(nir, red; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
 end
 
+function savi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return savi(raster[nir_band(T)], raster[red_band(T)]; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
+end
+
 """
     ndmi(src::AbstractSatellite)
+    ndmi(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     ndmi(nir::AbstractRaster, swir1::AbstractRaster)
 
 Compute the Normalized Difference Moisture Index.
@@ -99,8 +120,13 @@ function ndmi(x::T) where {T <: AbstractSatellite}
     return ndmi(Raster(x, :nir), Raster(x, :swir1))
 end
 
+function ndmi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return ndmi(raster[nir_band(T)], raster[swir1_band(T)])
+end
+
 """
     nbri(src::AbstractSatellite)
+    nbri(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     nbri(nir::AbstractRaster, swir2::AbstractRaster)
 
 Compute the Normalized Burn Ratio Index.
@@ -117,8 +143,13 @@ function nbri(x::T) where {T <: AbstractSatellite}
     return nbri(Raster(x, :nir), Raster(x, :swir2))
 end
 
+function nbri(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return nbri(raster[nir_band(T)], raster[swir2_band(T)])
+end
+
 """
     ndbi(src::AbstractSatellite)
+    ndbi(::Type{AbstractSatellite}, stack::AbstractRasterStack)
     ndbi(swir1::AbstractRaster, nir::AbstractRaster)
 
 Compute the The Normalized Difference Built-up Index
@@ -133,6 +164,10 @@ end
  
 function ndbi(x::T) where {T <: AbstractSatellite}
     return ndbi(Raster(x, :swir1), Raster(x, :nir))
+end
+
+function ndbi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
+    return ndbi(raster[swir1_band(T)], raster[nir_band(T)])
 end
 
 function _normalized_difference(a::AbstractRaster, b::AbstractRaster)

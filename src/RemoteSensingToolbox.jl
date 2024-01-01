@@ -33,7 +33,7 @@ include("mnf.jl")
 include("spectral_analysis.jl")
 
 # Export visualization
-export TrueColor, ColorInfrared, SWIR, Agriculture, Geology, visualize
+export visualize, true_color, color_infrared, swir, geology, agriculture
 
 # Export Indices
 export mndwi, ndwi, ndvi, savi, ndmi, nbri, ndbi

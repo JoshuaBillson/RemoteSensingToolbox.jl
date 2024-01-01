@@ -70,6 +70,7 @@ dn_scale
 dn_offset
 decode
 encode
+SatelliteDataSources.metadata
 Rasters.Raster
 Rasters.RasterStack
 ```
@@ -78,10 +79,13 @@ Rasters.RasterStack
 
 Remotely sensed imagery is typically encoded as either `UInt16` or `Int16` values. However, many products only actually use the first 12 bits for storing information. The result is that naive visualization methods will produce a near-black image, since the maximum possible brightness will be located in the lower range of values provided by the 16 bit encoding. To address this, we need to perform a linear stretch before visualizing an image. Moreover, many satellites have more than three bands, which motivates the use of band combinations to emphasize certain features and land cover types.
 
-```@autodocs
-Modules = [RemoteSensingToolbox]
-Pages = ["visualization.jl"]
-Private = false
+```@docs
+visualize
+true_color
+color_infrared
+swir
+agriculture
+geology
 ```
 
 # Land Cover Indices
