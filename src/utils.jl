@@ -1,50 +1,23 @@
+"""
+    has_bands(raster)
+
+Returns `true` if the provided raster or stack has a band dimension.
+"""
 function has_bands(raster)
     return any(isa.(dims(raster), Rasters.Band))
 end
 
-"Return the number of bands in a raster."
+"""
+    nbands(raster)
+
+Returns the number of spectral bands in the given `AbstractRaster` or `AbstractRasterStack`.
+"""
 function nbands(raster::AbstractRaster)
     return has_bands(raster) ? size(raster, Rasters.Band) : 1
 end
 
 function nbands(raster::AbstractRasterStack)
     return length(raster)
-end
-
-"Returns the indices of all non-missing entries in the given `Raster` or `RasterStack`."
-function nonmissing(raster::AbstractRaster)
-    stack = has_bands(raster) ? RasterStack(raster, layersfrom=Rasters.Band) : RasterStack(raster)
-    return nonmissing(stack)
-end
-
-function nonmissing(raster::AbstractRasterStack)
-    bmasks = map(boolmask, raster)
-    bmask = first(bmasks)
-    for layer in names(bmasks)[2:end]
-        bmask .*= bmasks[layer]
-    end
-    return [i for (i, x) in enumerate(bmask) if x]
-end
-
-"Read a raster from disk into memory. Return immediately if raster has already been read."
-function efficient_read(r::Raster)
-    return r.data isa Array ? r : read(r)
-end
-
-function efficient_read(r::AbstractRasterStack)
-    return map(x -> efficient_read(x), r)
-end
-
-function ignore_missing(f::Function, raster::AbstractRaster)
-    mask!(f(raster); with=raster)
-end
-
-function ignore_missing(f::Function, raster::AbstractRasterStack)
-    new_raster = f(raster)
-    for layer in names(raster)
-        mask!(new_raster[layer]; with=raster[layer])
-    end
-    return new_raster
 end
 
 """
@@ -162,60 +135,93 @@ function sample(raster::Union{<:AbstractRaster, <:AbstractRasterStack}, sink; kw
 end
 
 """
-    mask_pixels(raster, mask; invert_mask=false)
+    apply_masks(raster, masks...)
 
-Drop pixels from a raster according to a given mask. The mask and raster must have the same extent and size.
-
-# Parameters
-- `raster`: The raster to be masked.
-- `mask`: A mask defining which pixels we want to drop. By default, we drop pixels corresponding to mask values of `1`.
-- `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
-"""
-function mask_pixels(raster::AbstractRaster, mask; invert_mask=false)
-    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
-    return Rasters.mask(raster; with=rebuild(mask; missingval=missing_value))
-end
-
-function mask_pixels(raster::AbstractRasterStack, mask; kwargs...)
-    return map(x -> mask_pixels(x, mask; kwargs...), raster)
-end
-
-"""
-    mask_pixels!(raster, mask; invert_mask=false)
-
-Drop pixels from a raster according to a given mask. The mask and raster must have the same extent and size.
+Similar to `Rasters.mask`, but with the following differences:
+1. Removes non-missing mask values instead of missing values. This is useful when working with cloud or shadow masks.
+2. Accepts multiple masks, which are applied in sequence.
 
 # Parameters
-- `raster`: The raster to be masked.
-- `mask`: A mask defining which pixels we want to drop. By default, we drop pixels corresponding to mask values of `1`.
-- `invert_mask`: Treat mask values of `1` as `0` and vice-versa.
+- `raster`: The `AbstractRaster` or `AbstractRasterStack` to be masked.
+- `masks`: One or more masks to apply to the given raster.
 """
-function mask_pixels!(raster::AbstractRaster, mask; invert_mask=false)
-    missing_value = invert_mask ? eltype(mask)(0) : eltype(mask)(1)
-    return Rasters.mask!(raster; with=rebuild(mask; missingval=missing_value))
-end
+function apply_masks(raster::RasterOrStack, masks...)
+    # Validate Arguments
+    isempty(masks) && throw(ArgumentError("`apply_masks` requires at least one mask!"))
 
-function mask_pixels!(raster::AbstractRasterStack, mask; kwargs...)
-    return map(x -> mask_pixels!(x, mask; kwargs...), raster)
-end
-
-function _copy_dims(data::AbstractArray{<:Number,3}, reference::AbstractRaster)
-    band_dim = Rasters.Band(LookupArrays.Categorical(1:size(data, 3), order=LookupArrays.ForwardOrdered()))
-    ref_dims = (dims(reference, :X), dims(reference, :Y), band_dim)
-    return Raster(data; crs=crs(reference), dims=ref_dims)
-end
-
-function _copy_dims(data::AbstractArray{<:Number,2}, reference::AbstractRaster)
-    ref_dims = (dims(reference, :X), dims(reference, :Y))
-    return Raster(data; crs=crs(reference), dims=ref_dims)
-end
-
-function _map_index(f::Function, raster::AbstractRasterStack)
-    i = 0
-    map(raster) do x
-        i += 1
-        f(i, x)
+    # Create Mask
+    bmask = Rasters.boolmask(first(masks))
+    if length(masks) > 1
+        for mask in masks[2:end]
+            bmask .= bmask .|| Rasters.boolmask(mask)
+        end
     end
+
+    # Apply Mask
+    return Rasters.mask(raster, with=.!(bmask))
+end
+
+"""
+    apply_masks!(raster, masks...)
+
+Similar to `Rasters.mask!`, but with the following differences:
+1. Removes non-missing mask values instead of missing values. This is useful when working with cloud or shadow masks.
+2. Accepts multiple masks, which are applied in sequence.
+
+# Parameters
+- `raster`: The `AbstractRaster` or `AbstractRasterStack` to be masked.
+- `masks`: One or more masks to apply to the given raster.
+"""
+function apply_masks!(raster::RasterOrStack, masks...)
+    # Validate Arguments
+    isempty(masks) && throw(ArgumentError("`apply_masks!` requires at least one mask!"))
+
+    # Create Mask
+    bmask = Rasters.boolmask(first(masks))
+    if length(masks) > 1
+        for mask in masks[2:end]
+            bmask .= bmask .|| Rasters.boolmask(mask)
+        end
+    end
+
+    # Apply Mask
+    return Rasters.mask!(raster, with=.!(bmask))
+end
+
+"Returns the indices of all non-missing entries in the given `Raster` or `RasterStack`."
+function nonmissing(raster::AbstractRaster)
+    stack = has_bands(raster) ? RasterStack(raster, layersfrom=Rasters.Band) : RasterStack(raster)
+    return nonmissing(stack)
+end
+
+function nonmissing(raster::AbstractRasterStack)
+    bmasks = map(boolmask, raster)
+    bmask = first(bmasks)
+    for layer in names(bmasks)[2:end]
+        bmask .*= bmasks[layer]
+    end
+    return [i for (i, x) in enumerate(bmask) if x]
+end
+
+"Read a raster from disk into memory. Return immediately if raster has already been read."
+function efficient_read(r::Raster)
+    return r.data isa Array ? r : read(r)
+end
+
+function efficient_read(r::AbstractRasterStack)
+    return map(x -> efficient_read(x), r)
+end
+
+function ignore_missing(f::Function, raster::AbstractRaster)
+    mask!(f(raster); with=raster)
+end
+
+function ignore_missing(f::Function, raster::AbstractRasterStack)
+    new_raster = f(raster)
+    for layer in names(raster)
+        mask!(new_raster[layer]; with=raster[layer])
+    end
+    return new_raster
 end
 
 function _eigen(A)

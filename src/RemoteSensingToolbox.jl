@@ -48,4 +48,7 @@ export PCA, fit_pca, forward_pca, inverse_pca, projection, cumulative_variance, 
 export MNF, fit_mnf, forward_mnf, inverse_mnf, estimate_noise
 export projection, noise_cov, data_cov, eigenvalues, cumulative_eigenvalues, snr, cumulative_snr
 
+# Export Utility Methods
+export has_bands, nbands, mask_nan!, apply_masks, apply_masks!, sample, table
+
 end
