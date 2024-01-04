@@ -212,18 +212,6 @@ function efficient_read(r::AbstractRasterStack)
     return map(x -> efficient_read(x), r)
 end
 
-function ignore_missing(f::Function, raster::AbstractRaster)
-    mask!(f(raster); with=raster)
-end
-
-function ignore_missing(f::Function, raster::AbstractRasterStack)
-    new_raster = f(raster)
-    for layer in names(raster)
-        mask!(new_raster[layer]; with=raster[layer])
-    end
-    return new_raster
-end
-
 function _eigen(A)
     eigs, vecs = LinearAlgebra.eigen(A)
     return reverse(eigs), reverse(vecs, dims=2)

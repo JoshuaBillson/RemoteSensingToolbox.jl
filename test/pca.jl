@@ -28,7 +28,6 @@ sentinel = RasterStack(src; lazy=false)
 pca = fit_pca(sentinel)
 
 # Test PCA Fit Results
-println(cumulative_variance(pca))
 @test cumulative_variance(pca)[end] ≈ 1.0
 @test all(cumulative_variance(pca) .<= 1.0)
 @test sort(cumulative_variance(pca)) == cumulative_variance(pca)

@@ -97,8 +97,10 @@ function savi(x::T; L=0.33, kwargs...) where {T <: AbstractSatellite}
     return savi(nir, red; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
 end
 
-function savi(::Type{T}, raster::AbstractRasterStack) where {T <: AbstractSatellite}
-    return savi(raster[nir_band(T)], raster[red_band(T)]; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
+function savi(::Type{T}, raster::AbstractRasterStack; L=0.33, kwargs...) where {T <: AbstractSatellite}
+    nir = raster[nir_band(T)]
+    red = raster[red_band(T)]
+    return savi(nir, red; L=L, scale=dn_scale(T, nir.name), offset=dn_offset(T, nir.name))
 end
 
 """

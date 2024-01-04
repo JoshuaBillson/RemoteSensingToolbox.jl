@@ -20,6 +20,7 @@ register(
 
 # Load Sentinel
 sentinel = Sentinel2{20}(datadep"S2B_MSIL2A_20200804T183919_N0214_R070_T11UPT_20200804T230343")
+stack = RasterStack(sentinel)
 
 # Test Indices
 for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
@@ -28,4 +29,5 @@ for index in [mndwi, ndwi, ndvi, ndmi, nbri, ndbi, savi]
     @test (result |> skipmissing |> maximum) <= 1.0f0
     @test (result |> skipmissing |> minimum) >= -1.0f0
     @test visualize(result) isa AbstractArray{Gray{N0f8}}
+    @test all(result .== index(Sentinel2{20}, stack))
 end

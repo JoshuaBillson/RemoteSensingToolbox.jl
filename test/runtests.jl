@@ -7,4 +7,6 @@ using Pipe: @pipe
 
 @safetestset "Makie" begin include("makie.jl") end
 
-#@safetestset "Preprocessing" begin include("preprocessing.jl") end
+@safetestset "Utilities" begin include("utils.jl") end
+
+@safetestset "Visualization" begin include("visualization.jl") end

@@ -20,9 +20,26 @@ layers are specified. We can also specify the keyword `lazy=true` to avoid loadi
 doing so, the raster(s) will not be retrieved from disk until explicitly indexed or read.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL
+using RemoteSensingToolbox, Rasters, ArchGDAL, DataDeps, Fetch
 
-src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
+# DataDeps Settings
+ENV["DATADEPS_ALWAYS_ACCEPT"] = true
+ENV["DATADEPS_LOAD_PATH"] = joinpath(pwd(), "data")
+
+# Fetch Landsat Scene from Google Drive
+register(
+    DataDep(
+        "LC08_L2SP_043024_20200802_20200914_02_T1", 
+        "Landsat 8 Test Data",
+        "https://drive.google.com/file/d/1S5H_oyWZZInOzJK4glBCr6LgXSADzhOV/view?usp=sharing", 
+        "2ce24abc359d30320213237d78101d193cdb8433ce21d1f7e9f08ca140cf5785", 
+        fetch_method=gdownload, 
+        post_fetch_method=unpack
+    )
+)
+
+# Read Landsat Bands
+src = Landsat8(datadep"LC08_L2SP_043024_20200802_20200914_02_T1")
 stack = RasterStack(src, lazy=true)
 ```
 
@@ -66,7 +83,11 @@ agriculture(src; upper=0.90)
 ```
 ![](figures/agriculture.jpg)
 
-We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.
+We'll finish this example by computing a few different land cover indices. Each index expects two bands as input, 
+such as green and swir (MNDWI), red and nir (NDVI), or nir and swir (NDMI). As with visualization, we do
+not need to specify these bands manually so long as the type of sensor is known. In general, each index has 
+three forms: one that requires only a single `AbstractSatellite` instance, a second that expects both the type 
+of satellite and a `RasterStack`, and a third which expects a `Raster` for each band.
 
 ```julia
 # Extract Region of Interest
