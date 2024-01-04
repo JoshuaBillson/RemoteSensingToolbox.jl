@@ -94,7 +94,7 @@ in `RemoteSensingToolbox` follow this same pattern.
 true_color(src; upper=0.90)
 ```
 
-![](figures/true_color.jpg)
+![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/true_color.jpg?raw=true)
 
 You may have noticed that we provided an additional argument `upper` to `true_color`. This parameter controls the 
 upper quantile to be used during the histogram adjustment. This parameter is set to 0.98 by default, but because 
@@ -112,7 +112,7 @@ masked = apply_masks(stack, cloud_mask, shadow_mask)
 true_color(Landsat8, masked)
 ```
 
-![](figures/masked.jpg)
+![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/masked.jpg?raw=true)
 
 Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to 
 emphasize regions with healthy vegetation, which appear as various shades of green.
@@ -120,7 +120,7 @@ emphasize regions with healthy vegetation, which appear as various shades of gre
 ```julia
 agriculture(src; upper=0.90)
 ```
-![](figures/agriculture.jpg)
+![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/agriculture.jpg?raw=true)
 
 We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.
 
@@ -136,6 +136,6 @@ tc = true_color(Landsat8, roi; upper=0.998)
 mosaic = mosaicview([tc, indices...]; npad=10, fillvalue=0.0, ncol=2, rowmajor=true)
 ```
 
-![](figures/indices.jpg)
+![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/indices.jpg?raw=true)
 
 For more examples, refer to the [docs](https://JoshuaBillson.github.io/RemoteSensingToolbox.jl/stable/).
