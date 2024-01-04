@@ -14,7 +14,9 @@ features can be observed. An alternative method is to threshold at a desired cum
 
 # Example
 ```julia-repl
-julia> desis = read_bands(DESIS, "data/DESIS-HSI-L2A-DT0884573241_001-20200601T234520-V0210/");
+julia> src = DESIS("data/DESIS-HSI-L2A-DT0485529167_001-20220712T223540-V0220")
+
+julia> desis = decode(DESIS, Raster(src, :Bands))
 
 julia> roi = @view desis[X(1019:1040), Y(550:590)];
 

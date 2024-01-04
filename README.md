@@ -5,14 +5,38 @@
 [![Build Status](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/JoshuaBillson/RemoteSensingToolbox.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JoshuaBillson/RemoteSensingToolbox.jl)
 
-[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl) for visualizing, analyzing, and manipulating remotely sensed imagery. Most methods expect either an `AbstractRaster` or `AbstractRasterStack` as input and return the same. The most important exception to this rule is `visualize`, which returns an `Array` of either `Gray` or `RGB` pixels, depending on whether the visualization is intended to be in color or grayscale. The result is that the output of `visualize` will be automatically displayed inside `Pluto`. 
+
+[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built 
+on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl) for reading, visualizing, and processing remotely 
+sensed imagery. Users may refer to the Tutorials section in the 
+[docs](https://JoshuaBillson.github.io/RemoteSensingToolbox.jl/stable/) for examples on how to use this package.
+
+# Installation
+
+To install this package, first start the Julia REPL and then open the package manager by typing `]`.
+You can then download `RemoteSensingToolbox` directly from the official Julia repository like so:
+
+```
+(@v1.9) pkg> add RemoteSensingToolbox
+```
+
+Once `RemoteSensingToolbox` has been installed, you can import it like any other Julia package. Please
+note that many features require you to also import the `Rasters` and `ArchGDAL` packages.
+
+```julia
+using RemoteSensingToolbox, Rasters, ArchGDAL
+```
 
 # Features
 
-`RemoteSensingToolbox` is a work in progress. This means that new features are being added and existing features are subject to change. To contribute to this project, please create an issue on [GitHub](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) or open a pull request.  A summary of both existing and future features are provided below:
+This package is a work in progress, which means that new features are being added and existing features 
+are subject to change. To contribute, please create an issue on 
+[GitHub](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) or open a pull request. A summary of both 
+existing and planned features is provided below:
 
 | Feature                   | Description                                                  | Implemented        |
 | :------------------------ | :----------------------------------------------------------- | :----------------: |
+| Reading and Writing       | Read layers from a scene and the write results to disk       | :white_check_mark: |
 | Visualization             | Visualize images with various band composites                | :white_check_mark: |
 | Land Cover Indices        | Calculate indices such as MNDWI and NDVI                     | :white_check_mark: |
 | QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks      | :white_check_mark: |
@@ -29,74 +53,89 @@
 
 `RemoteSensingToolbox` is intended to be used in conjunction with the wider Julia ecosystem and as such, seeks to avoid duplicating functinalities provided by other packages. As the majority of methods accept and return `AbstractRaster` or `AbstractRasterStack` objects, users should be able to call methods from [Rasters.jl](https://github.com/rafaqz/Rasters.jl) at any point in the processing pipeline. A summary of common functionalities offered by `Rasters.jl` is provided below: 
 
-| **Method**                          | **Description**                                                                        |
-| :---------------------------------- | :------------------------------------------------------------------------------------- |
-| `mosaic`                            | Join rasters covering different extents into a single array or file.                   |
-| `crop`                              | Shrink objects to specific dimension sizes or the extent of another object.            |
-| `extend`                            | Extend objects to specific dimension sizes or the extent of another object.            |
-| `trim`                              | Trims areas of missing values for arrays and across stack layers.                      |
-| `resample`                          | Resample data to a different size and projection, or snap to another object.           |
-| `mask`                              | Mask a raster by a polygon or the non-missing values of another Raster.                |
-| `replace_missing`                   | Replace all missing values in a raster and update missingval.                          |
-| `extract`                           | Extract raster values from points or geometries.                                       |
-| `zonal`                             | Calculate zonal statistics for a raster masked by geometries.                          |
+| **Method**             | **Description**                                                                        |
+| :--------------------- | :------------------------------------------------------------------------------------- |
+| `mosaic`               | Join rasters covering different extents into a single array or file.                   |
+| `crop`                 | Shrink objects to specific dimension sizes or the extent of another object.            |
+| `extend`               | Extend objects to specific dimension sizes or the extent of another object.            |
+| `trim`                 | Trims areas of missing values for arrays and across stack layers.                      |
+| `resample`             | Resample data to a different size and projection, or snap to another object.           |
+| `mask`                 | Mask a raster by a polygon or the non-missing values of another Raster.                |
+| `replace_missing`      | Replace all missing values in a raster and update missingval.                          |
+| `extract`              | Extract raster values from points or geometries.                                       |
+| `zonal`                | Calculate zonal statistics for a raster masked by geometries.                          |
 
 # Quickstart Example
 
-First, let's load some imagery to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
+Typically, the first step in a workflow is to read the desired layers from disk. To do so, we first need to place
+our product within the appropriate context; in this case `Landsat8`. With this done, we can load whichever
+layers we desire simply by asking for them by name. A complete list of all available layers can be acquired by
+calling `layers(Landsat8)`. To load a single layer, we typically use a `Raster`, while a `RasterStack` is used 
+when loading multiple layers at once. By default, `RasterStack` will read all of the spectral layers when no
+layers are specified. We can also specify the keyword `lazy=true` to avoid loading everything into memory. When 
+doing so, the raster(s) will not be retrieved from disk until explicitly indexed or read.
 
 ```julia
-using RemoteSensingToolbox, Rasters
-using Pipe: @pipe
+using RemoteSensingToolbox, Rasters, ArchGDAL
 
-landsat = read_bands(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
+stack = RasterStack(src, lazy=true)
 ```
 
-Now let's visualize our data to see what we're working with. This is where the power of `AbstractBandset` can first be demonstrated. To view a true colour composite of the data, we need to know the bands corresponding to red, green, and blue. However, it would be tedious to memorize and manually specify this information whenever we want to call a method which relies on a specific combination of bands. Fortunately, all `AbstractBandset` types know this information implicitly, so all we need to do is pass in `Landsat8` as a parameter to `TrueColor`.
+Now let's visualize our data to see what we're working with. The `true_color` method displays the red, green, and
+blue bands to provide an image that is familiar to the human eye. In most other frameworks, we would have to specify
+each of these bands individually, which in turn requires knowledge about the sensor in question. However, because
+we have placed our scene within a `Landsat8` context, `true_color` is smart enough to figure this out on its own.
+As an alternative, we could have also called `true_color(Landsat8, stack; upper=0.90)`, which requires passing in
+the sensor type as the first agument and a stack containing the relevant bands as the second. Many other methods 
+in `RemoteSensingToolbox` follow this same pattern.
 
 ```julia
-visualize(landsat, TrueColor{Landsat8}; upper=0.90)
+true_color(src; upper=0.90)
 ```
 
-![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/true_color.png?raw=true)
+![](figures/true_color.jpg)
 
-You may have noticed that we provided an additional argument `upper` to the `visualize` method. This parameter controls the upper quantile to be used when performing histogram stretching to make the imagery interpretable to humans. This parameter is set to 0.98 by default, but because our scene contains a significant number of bright clouds, we need to lower it to prevent the image from appearing too dark. We can remove these clouds by first loading the Quality Assurance (QA) mask that came with our landsat product and then calling `mask_pixels`.
+You may have noticed that we provided an additional argument `upper` to `true_color`. This parameter controls the 
+upper quantile to be used during the histogram adjustment. This parameter is set to 0.98 by default, but because 
+our scene contains a significant number of bright clouds, we need to lower it to prevent the image from appearing 
+too dark. We can remove these clouds by loading the `:clouds` and `:cloud_shadow` layers from the provided scene and
+then calling `apply_masks`.
 
 ```julia
-qa = read_qa(Landsat8, "LC08_L2SP_043024_20200802_20200914_02_T1/")
+# Mask Clouds
+cloud_mask = Raster(src, :clouds)
+shadow_mask = Raster(src, :cloud_shadow)
+masked = apply_masks(stack, cloud_mask, shadow_mask)
 
-masked_landsat = @pipe mask_pixels(landsat, qa[:cloud]) |> mask_pixels(_, qa[:cloud_shadow])
-
-visualize(masked_landsat, TrueColor{Landsat8})
+# Visualize in True Color
+true_color(Landsat8, masked)
 ```
 
-![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/masked.png?raw=true)
+![](figures/masked.jpg)
 
-Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to distinguish regions with healthy vegetation, which appear as various shades of green.
+Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to 
+emphasize regions with healthy vegetation, which appear as various shades of green.
 
 ```julia
-visualize(landsat, Agriculture{Landsat8}; upper=0.90)
+agriculture(src; upper=0.90)
 ```
-![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/agriculture.png?raw=true)
-
-We can also convert Digital Numbers (DNs) to reflectance by calling `dn_to_reflectance` and passing in the appropriate bandset.
-
-```julia
-landsat_sr = dn_to_reflectance(Landsat8, landsat)
-```
+![](figures/agriculture.jpg)
 
 We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.
 
 ```julia
-roi = @view landsat_sr[X(5800:6800), Y(2200:3200)]
+# Extract Region of Interest
+roi = @view masked[X(5800:6800), Y(2200:3200)]
 
-true_color = visualize(roi, TrueColor{Landsat8}; upper=0.998)
+# Calculate Indices
+indices = map(visualize, [mndwi(Landsat8, roi), ndvi(Landsat8, roi), ndmi(Landsat8, roi)])
 
-index = mndwi(roi, Landsat8) |> visualize
-
-mosaicview(true_color, index; npad=5, fillvalue=0.0, ncol=2)
+# Visualize
+tc = true_color(Landsat8, roi; upper=0.998)
+mosaic = mosaicview([tc, indices...]; npad=10, fillvalue=0.0, ncol=2, rowmajor=true)
 ```
 
-![](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl/blob/main/docs/src/figures/patches.png?raw=true)
+![](figures/indices.jpg)
 
 For more examples, refer to the [docs](https://JoshuaBillson.github.io/RemoteSensingToolbox.jl/stable/).

@@ -4,7 +4,7 @@
 
 Visualize an RGB or grayscale satellite image.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -39,7 +39,7 @@ Visualize a satellite image using the true-color band combination, which appears
 
 Accepts either an `AbstractSatellite` or a combination of `Type{AbstractSatellite}` and `AbstractRasterStack`.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -78,7 +78,7 @@ Visualize a satellite image using the color-infrared band combination, which hig
 
 Accepts either an `AbstractSatellite` or a combination of `Type{AbstractSatellite}` and `AbstractRasterStack`.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -102,7 +102,7 @@ Visualize a satellite image using the SWIR band combination, which emphasizes de
 
 Accepts either an `AbstractSatellite` or a combination of `Type{AbstractSatellite}` and `AbstractRasterStack`.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -126,7 +126,7 @@ Visualize a satellite image with the agricultural band combination, which is use
 
 Accepts either an `AbstractSatellite` or a combination of `Type{AbstractSatellite}` and `AbstractRasterStack`.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -150,7 +150,7 @@ Visualize a satellite image with the geology band combination, which emphasizes 
 
 Accepts either an `AbstractSatellite` or a combination of `Type{AbstractSatellite}` and `AbstractRasterStack`.
 
-Returns a `Raster` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
+Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Keywords
 - `lower`: The lower percentile to use for adjusting the image histogram.
@@ -197,7 +197,7 @@ end
 
 function _raster_to_image(raster::Raster{ImageCore.N0f8})
     _dims = (dims(raster, Y), dims(raster, X))
-    return @pipe raster.data |> _colorview |> Raster(_, _dims)
+    return @pipe raster.data |> _colorview
 end
 
 function _colorview(x::Matrix{ImageCore.N0f8})

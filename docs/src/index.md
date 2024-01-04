@@ -4,14 +4,36 @@ CurrentModule = RemoteSensingToolbox
 
 # RemoteSensingToolbox
 
-[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl) for visualizing, analyzing, and manipulating remotely sensed imagery. Most methods expect either an `AbstractRaster` or `AbstractRasterStack` as input and return the same. The most important exception to this rule is [`visualize`](@ref), which returns an `Array` of either `Gray` or `RGB` pixels, depending on whether the visualization is intended to be in color or grayscale. The result is that the output of `visualize` will be automatically displayed inside `Pluto`. 
+[RemoteSensingToolbox](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) is a pure Julia package built 
+on top of [Rasters.jl](https://github.com/rafaqz/Rasters.jl) for reading, visualizing, and processing remotely 
+sensed imagery. Users may refer to the Tutorials section for examples on how to use this package.
+
+# Installation
+
+To install this package, first start the Julia REPL and then open the package manager by typing `]`.
+You can then download `RemoteSensingToolbox` directly from the official Julia repository like so:
+
+```
+(@v1.9) pkg> add RemoteSensingToolbox
+```
+
+Once `RemoteSensingToolbox` has been installed, you can import it like any other Julia package. Please
+note that many features require you to also import the `Rasters` and `ArchGDAL` packages.
+
+```julia
+using RemoteSensingToolbox, Rasters, ArchGDAL
+```
 
 # Features
 
-`RemoteSensingToolbox` is a work in progress. This means that new features are being added and existing features are subject to change. To contribute to this project, please create an issue on [GitHub](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) or open a pull request.  A summary of both existing and future features are provided below:
+This package is a work in progress, which means that new features are being added and existing features 
+are subject to change. To contribute, please create an issue on 
+[GitHub](https://github.com/JoshuaBillson/RemoteSensingToolbox.jl) or open a pull request. A summary of both 
+existing and planned features is provided below:
 
 | Feature                   | Description                                                  | Implemented        |
 | :------------------------ | :----------------------------------------------------------- | :----------------: |
+| Reading and Writing       | Read layers from a scene and the write results to disk       | Yes                |
 | Visualization             | Visualize images with various band composites                | Yes                |
 | Land Cover Indices        | Calculate indices such as MNDWI and NDVI                     | Yes                |
 | QA and SCL Decoding       | Decode Quality Assurance and Scene Classification masks      | Yes                |
@@ -43,11 +65,14 @@ CurrentModule = RemoteSensingToolbox
 
 # Satellites
 
-`AbstractSatellites` are Julia types that encode sensor-specific information needed for many methods in `RemoteSensingToolbox`
-to work without requiring tedious details from the end user. One of their primary uses is to allow various layers to be requested 
-by name. For example, if we have bound the variable `src` to an instance of `Landsat8`, then we can load a cloud mask from the 
-included QA file by calling `Raster(src, :clouds)`. Each `AbstractSatellite` also includes information about how to convert
-digital numbers into reflectance or temperature, the wavelengths associated with each band, and how to parse metadata from a scene's name.
+When working with remotely sensed images, the user is often required to adapt their approach according to 
+the type of sensor that produced it. For example, decoding digital numbers into radiance, reflectance, or
+temperature requires knowledge about the encoding scheme used by the satellite in question. To address these
+issues, we provide the `AbstractSatellite` type, which encodes various sensor-specific parameters at the 
+type level for several popular platforms. This approach allows the end-user to write generic code that 
+automatically adapts to the sensor being used. For example, if we have bound the variable `src` to an instance 
+of `Landsat8`, then we can load a cloud mask from the included QA file by calling `Raster(src, :clouds)`, or
+calculate the MNDWI index by calling `mndwi(src)`.
 
 ```@docs
 AbstractSatellite
@@ -90,10 +115,11 @@ geology
 
 # Land Cover Indices
 
-Land cover indices are used to highlight different types of land cover. For example, the Modified Normalized Difference Water 
-Index (MNDWI) is used to highlight water while diminishing built-up areas. Each index is expressed as a function of two or more 
-bands. `RemoteSensingToolbox` can automatically select the appropriate bands for a given index by providing an `AbstractSatellite`. 
-We also provide lower-level variants to enable the use of unsupported satellites.
+Land cover indices are used to highlight different types of land cover. For example, the Modified Normalized
+Difference Water Index (MNDWI) is used to highlight water while diminishing built-up areas. Each index is 
+expressed as a function of two or more bands. `RemoteSensingToolbox` can automatically select the appropriate 
+bands for a given index by specifying the `AbstractSatellite` type, while also providing the option to manually
+specify bands as the user desires.
 
 ```@autodocs
 Modules = [RemoteSensingToolbox]
@@ -103,7 +129,11 @@ Private = false
 
 # Spectral Analysis
 
-Spectral analysis involves studying the relationships between different materials and their corresponding spectral signatures. Due to the interactions between light and matter, each signature is unique to the material that emitted it. We can exploit this fact to assign a label to each pixel, or even estimate the abundances of different materials at a sub-pixel level.
+Spectral analysis involves studying the relationships between different materials and their corresponding 
+spectral signatures. Due to the interactions between light and matter, each signature is unique to the material
+that emitted it. We can exploit this fact to assign a label to each pixel, or even estimate the abundances of
+different materials at a sub-pixel level. This package provides several methods for both extracting and 
+visualizing these signatures.
 
 ```@docs
 extract_signatures
@@ -133,7 +163,7 @@ Private = false
 
 # Utilities
 
-`RemoteSensingToolbox` provides several utility functions for modifying and processing remotely sensed data.
+`RemoteSensingToolbox` provides several utility functions for working with remotely sensed data.
 
 ```@autodocs
 Modules = [RemoteSensingToolbox]

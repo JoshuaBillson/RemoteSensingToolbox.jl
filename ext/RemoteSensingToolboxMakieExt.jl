@@ -47,7 +47,7 @@ function RST.plot_signatures!(ax, satellite::Type{<:AbstractSatellite}, sigs; kw
     RST.plot_signatures!(ax, bandset, sigs; kwargs...)
 end
 
-function RST.plot_signatures!(ax, bandset::Vector{Pair{Symbol, Int}}, sigs; colors=Makie.wong_colors(), label=:label)
+function RST.plot_signatures!(ax, bandset::Vector{<:Pair{Symbol, <:Number}}, sigs; colors=Makie.wong_colors(), label=:label)
     # Extract Signatures
     x, y = _sigs_to_xy(bandset, sigs)
 

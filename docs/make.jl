@@ -20,8 +20,9 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        "Examples" => [
+        "Tutorials" => [
             "Quick Start" => "quickstart.md", 
+            "Pansharpening" => "pansharpening.md", 
             "Principal Component Analysis" => "pca_example.md", 
             "Spectral Analysis" => "spectral_example.md", 
         ], 

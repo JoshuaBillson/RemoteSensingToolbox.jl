@@ -4,59 +4,80 @@ CurrentModule = RemoteSensingToolbox
 
 # Quick Start
 
-`RemoteSensingToolbox` provides a number of utilities for visualizing, manipulating, and interpreting remotely sensed imagery. First, lets load the imagery we want to work with. We're using Landsat 8 imagery in this example, so we'll pass the `Landsat8` type to `read_bands` so it knows how to parse the relevant files from the provided directory. `Landsat8` is an instance of `AbstractBandset`, which is the supertype responsible for allowing many methods within `RemoteSensingToolbox` to infer sensor-specific information by exploiting Julia's multiple dispatch system.
+`RemoteSensingToolbox` is a pure Julia package which provides a number of utilities for reading, visualizing, and
+processing remotely sensed imagery. When working with such data, the user is often faced with the need to adapt their
+approach according to the type of sensor that produced it. For example, decoding digital numbers into radiance, 
+reflectance, or temperature requires knowledge about the encoding scheme used by the satellite product in question.
+The address these issues, we provide several `AbstractSatellite` types, which encode various parameters at the type
+level. 
+
+Typically, the first step in a workflow is to read the desired layers from disk. To do so, we first need to place
+our product within the appropriate context; in this case `Landsat8`. With this done, we can load whichever
+layers we desire simply by asking for them by name. A complete list of all available layers can be acquired by
+calling `layers(Landsat8)`. To load a single layer, we typically use a `Raster`, while a `RasterStack` is used 
+when loading multiple layers at once. By default, `RasterStack` will read all of the spectral layers when no
+layers are specified. We can also specify the keyword `lazy=true` to avoid loading everything into memory. When 
+doing so, the raster(s) will not be retrieved from disk until explicitly indexed or read.
 
 ```julia
-using RemoteSensingToolbox, Rasters
+using RemoteSensingToolbox, Rasters, ArchGDAL
 
 src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
 stack = RasterStack(src, lazy=true)
 ```
 
-Now let's visualize our data to see what we're working with. This is where the power of `AbstractBandset` can first be demonstrated. To view a true color composite of the data, we need to know the bands corresponding to red, green, and blue. However, it would be tedious to memorize and manually specify this information whenever we want to call a method which relies on a specific combination of bands. Fortunately, all `AbstractBandset` types know this information implicitly, so all we need to do is pass in `Landsat8` as a parameter to `TrueColor`.
+Now let's visualize our data to see what we're working with. The `true_color` method displays the red, green, and
+blue bands to provide an image that is familiar to the human eye. In most other frameworks, we would have to specify
+each of these bands individually, which in turn requires knowledge about the sensor in question. However, because
+we have placed our scene within a `Landsat8` context, `true_color` is smart enough to figure this out on its own.
+As an alternative, we could have also called `true_color(Landsat8, stack; upper=0.90)`, which requires passing in
+the sensor type as the first agument and a stack containing the relevant bands as the second. Many other methods 
+in `RemoteSensingToolbox` follow this same pattern.
 
 ```julia
-visualize(TrueColor{Landsat8}, stack; upper=0.90)
+true_color(src; upper=0.90)
 ```
 
 ![](figures/true_color.jpg)
 
-You may have noticed that we provided an additional argument `upper` to the `visualize` method. This parameter controls the upper quantile to be used when performing histogram stretching to make the imagery interpretable to humans. This parameter is set to 0.98 by default, but because our scene contains a significant number of bright clouds, we need to lower it to prevent the image from appearing too dark. We can remove these clouds by first loading the Quality Assurance (QA) mask that came with our landsat product and then calling `mask_pixels`.
+You may have noticed that we provided an additional argument `upper` to `true_color`. This parameter controls the 
+upper quantile to be used during the histogram adjustment. This parameter is set to 0.98 by default, but because 
+our scene contains a significant number of bright clouds, we need to lower it to prevent the image from appearing 
+too dark. We can remove these clouds by loading the `:clouds` and `:cloud_shadow` layers from the provided scene and
+then calling `apply_masks`.
 
 ```julia
 # Mask Clouds
 cloud_mask = Raster(src, :clouds)
 shadow_mask = Raster(src, :cloud_shadow)
-raster_mask = .!(boolmask(cloud_mask) .|| boolmask(shadow_mask))
-masked = mask(stack, with=raster_mask)
+masked = apply_masks(stack, cloud_mask, shadow_mask)
 
 # Visualize in True Color
-visualize(TrueColor{Landsat8}, masked)
+true_color(Landsat8, masked)
 ```
 
 ![](figures/masked.jpg)
 
-Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to distinguish regions with healthy vegetation, which appear as various shades of green.
+Now let's try to visualize some other band combinations. The `Agriculture` band comination is commonly used to 
+emphasize regions with healthy vegetation, which appear as various shades of green.
 
 ```julia
-visualize(Agriculture{Landsat8}, stack; upper=0.90)
+agriculture(src; upper=0.90)
 ```
 ![](figures/agriculture.jpg)
 
 We'll finish this example by demonstrating how to compute land cover indices with any `AbstractBandset` type. The Modified Normalized Difference Water Index (MNDWI) is used to help distinguish water from land. Here, we visualize both the true color representation and the corresponding MNDWI index.
 
 ```julia
-# Calculate Indices
-indices = (mndwi=mndwi(src), ndvi=ndvi(src), ndmi=ndmi(src))
-
 # Extract Region of Interest
-stack = merge(stack, indices)
-roi = @view stack[X(5800:6800), Y(2200:3200)]
+roi = @view masked[X(5800:6800), Y(2200:3200)]
+
+# Calculate Indices
+indices = map(visualize, [mndwi(Landsat8, roi), ndvi(Landsat8, roi), ndmi(Landsat8, roi)])
 
 # Visualize
-true_color = visualize(TrueColor{Landsat8}, roi; upper=0.998)
-index_imgs = [visualize(roi[i]) for i in (:mndwi, :ndvi, :ndmi)]
-mosaicview(true_color, index_imgs...; npad=10, fillvalue=0.0, ncol=2, rowmajor=true)
+tc = true_color(Landsat8, roi; upper=0.998)
+mosaic = mosaicview([tc, indices...]; npad=10, fillvalue=0.0, ncol=2, rowmajor=true)
 ```
 
 ![](figures/indices.jpg)

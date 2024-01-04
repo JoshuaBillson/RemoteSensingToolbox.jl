@@ -82,8 +82,8 @@ explained_variance(x::PCA) = x.explained_variance
 
 function Base.show(io::IO, ::MIME"text/plain", x::PCA)
     # Extract Values
-    cv = @pipe round.(x.cumulative_variance, digits=4)
-    ev = @pipe round.(x.explained_variance, digits=4)
+    cv = round.(x.cumulative_variance, digits=4)
+    ev = round.(x.explained_variance, digits=4)
     P = round.(x.projection, digits=4)
 
     # Split Explained Variance and Cumulative Variance
