@@ -25,11 +25,12 @@ jobs:
           - x64
     steps:
       - uses: actions/checkout@v2
+        with: 
+          lfs: true
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-          lfs: 'true'
       - uses: julia-actions/cache@v1
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
