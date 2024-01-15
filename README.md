@@ -75,26 +75,10 @@ to load multiple layers at once. By default, `RasterStack` will read all of the 
 specified. We can also set `lazy=true` to avoid reading everything into memory up-front.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL, DataDeps, Fetch
-
-# DataDeps Settings
-ENV["DATADEPS_ALWAYS_ACCEPT"] = true
-ENV["DATADEPS_LOAD_PATH"] = joinpath(pwd(), "data")
-
-# Fetch Landsat Scene from Google Drive
-register(
-    DataDep(
-        "LC08_L2SP_043024_20200802_20200914_02_T1", 
-        "Landsat 8 Test Data",
-        "https://drive.google.com/file/d/1S5H_oyWZZInOzJK4glBCr6LgXSADzhOV/view?usp=sharing", 
-        "2ce24abc359d30320213237d78101d193cdb8433ce21d1f7e9f08ca140cf5785", 
-        fetch_method=gdownload, 
-        post_fetch_method=unpack
-    )
-)
+using RemoteSensingToolbox, Rasters, ArchGDAL
 
 # Read Landsat Bands
-src = Landsat8(datadep"LC08_L2SP_043024_20200802_20200914_02_T1")
+src = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1")
 stack = RasterStack(src, lazy=true)
 ```
 
