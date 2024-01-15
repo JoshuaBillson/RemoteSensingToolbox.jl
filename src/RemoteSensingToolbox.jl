@@ -2,7 +2,6 @@ module RemoteSensingToolbox
 
 import ImageCore
 import Tables
-import TableOperations
 import LinearAlgebra
 import Random
 import ArchGDAL
@@ -12,6 +11,7 @@ using Statistics
 using DocStringExtensions
 using DataFrames
 using Bijections
+using Match
 
 using Pipe: @pipe
 using Reexport: @reexport
@@ -19,6 +19,7 @@ using Reexport: @reexport
 @reexport using SatelliteDataSources
 
 const RasterOrStack = Union{<:AbstractRasterStack, <:AbstractRaster}
+const DD = DimensionalData
 
 include("utils.jl")
 
@@ -49,6 +50,6 @@ export MNF, fit_mnf, forward_mnf, inverse_mnf, estimate_noise
 export projection, noise_cov, data_cov, eigenvalues, cumulative_eigenvalues, snr, cumulative_snr
 
 # Export Utility Methods
-export has_bands, nbands, mask_nan!, apply_masks, apply_masks!, sample, table
+export has_bands, nbands, mask_nan!, apply_masks, apply_masks!, sample, table, statistics, from_table
 
 end
