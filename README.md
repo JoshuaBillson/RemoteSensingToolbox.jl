@@ -21,10 +21,10 @@ You can then download `RemoteSensingToolbox` directly from the official Julia re
 ```
 
 Once `RemoteSensingToolbox` has been installed, you can import it like any other Julia package. Please
-note that many features require you to also import the `Rasters` and `ArchGDAL` packages.
+note that many features require you to also import the `Rasters` package.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL
+using RemoteSensingToolbox, Rasters
 ```
 
 # Features

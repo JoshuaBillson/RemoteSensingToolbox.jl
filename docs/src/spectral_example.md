@@ -17,7 +17,7 @@ no light was reflected at all, whereas a reflectance of 1.0 tells us that 100% w
 Fortunately, each `AbstractSatellite` contains the necessary information for this conversion.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL, Statistics, DataFrames, Shapefile
+using RemoteSensingToolbox, Rasters, Statistics, DataFrames, Shapefile
 
 # Read Landsat, Sentinel, and DESIS Bands
 landsat_src = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1")

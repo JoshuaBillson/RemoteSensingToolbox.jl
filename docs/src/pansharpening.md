@@ -12,26 +12,10 @@ simple method, which involves replacing the value channel from an HSV representa
 with the panchromatic band. As always, the first step is to read the necessary layers from disk.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL, Images, DataDeps, Fetch
-
-# DataDeps Settings
-ENV["DATADEPS_ALWAYS_ACCEPT"] = true
-ENV["DATADEPS_LOAD_PATH"] = joinpath(pwd(), "data")
-
-# Fetch Landsat 8 Scene from Google Drive
-register(
-    DataDep(
-        "LC08_L1TP_043024_20200802_20200914_02_T1", 
-        """Landast 8 Pansharpening Example""", 
-        "https://drive.google.com/file/d/107GjXFqmtKeNMLdOUreq3jl5wWGCpYro/view?usp=sharing", 
-        "d6dc0c29e76db6f60ac665194ddd565cb808417250218f35f2f405a97064f297", 
-        fetch_method=gdownload, 
-        post_fetch_method=unpack
-    )
-)
+using RemoteSensingToolbox, Rasters, Images
 
 # Read RGB and Panchromatic Bands
-src = Landsat8(datadep"LC08_L1TP_043024_20200802_20200914_02_T1")
+src = Landsat8("data/LC08_L1TP_043024_20200802_20200914_02_T1")
 stack = RasterStack(src, [:red, :green, :blue], lazy=true)
 panchromatic = Raster(src, :panchromatic, lazy=true)
 ```

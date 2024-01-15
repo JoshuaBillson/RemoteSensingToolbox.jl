@@ -14,27 +14,11 @@ PCA is used in remote sensing to:
 Our first step is to load and visualize our data.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL, DataDeps, Fetch
+using RemoteSensingToolbox, Rasters
 using Pipe: @pipe
 
-# DataDeps Settings
-ENV["DATADEPS_ALWAYS_ACCEPT"] = true
-ENV["DATADEPS_LOAD_PATH"] = joinpath(pwd(), "data")
-
-# Fetch Sentinel 2 Scene from Google Drive
-register(
-    DataDep(
-        "S2B_MSIL2A_20200804T183919_N0214_R070_T11UPT_20200804T230343", 
-        """Sentinel 2 Test Data""", 
-        "https://drive.google.com/file/d/1P7TSPf_GxYtyOYat3iIui1hbjvb7H6a0/view?usp=sharing", 
-        "4135c6192a314e0d08d21cf44ca3cde0f34f1968854275e32656278ca163a3e0", 
-        fetch_method=gdownload, 
-        post_fetch_method=unpack
-    )
-)
-
 # Read Sentinel 2 Bands at 60m Resolution
-src = Sentinel2{60}(datadep"S2B_MSIL2A_20200804T183919_N0214_R070_T11UPT_20200804T230343")
+src = Sentinel2{60}("data/S2B_MSIL2A_20200804T183919_N0214_R070_T11UPT_20200804T230343")
 sentinel = RasterStack(src; lazy=false)
 
 # Extract Region of Interest
