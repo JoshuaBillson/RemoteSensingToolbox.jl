@@ -1,5 +1,5 @@
 using Test, Statistics
-using RemoteSensingToolbox, Rasters, ArchGDAL, DataFrames
+using RemoteSensingToolbox, Rasters, DataFrames
 using Pipe: @pipe
 
 # Read Landsat Bands

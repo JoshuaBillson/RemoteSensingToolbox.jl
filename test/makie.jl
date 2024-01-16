@@ -1,5 +1,5 @@
 using Test, Statistics
-using RemoteSensingToolbox, Rasters, ArchGDAL
+using RemoteSensingToolbox, Rasters
 using DataFrames, GeoDataFrames
 using Pipe: @pipe
 

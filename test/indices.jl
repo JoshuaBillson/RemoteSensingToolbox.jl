@@ -1,6 +1,5 @@
 using Test, Statistics
-using RemoteSensingToolbox, Rasters, ArchGDAL
-using DataDeps, Fetch, Images
+using RemoteSensingToolbox, Rasters, Images
 using Pipe: @pipe
 
 # Load Sentinel

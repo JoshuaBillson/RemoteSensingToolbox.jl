@@ -12,7 +12,7 @@ Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Example
 ```julia
-using RemoteSensingToolbox, ArchGDAL, Rasters, FileIO, JpegTurbo
+using RemoteSensingToolbox, Rasters, FileIO
 
 # Prepare a Landsat 8 Image
 src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")
@@ -47,7 +47,7 @@ Returns an `Array` of either `RGB{N0f8}` or `Gray{N0f8}` elements.
 
 # Example
 ```julia
-using RemoteSensingToolbox, ArchGDAL, Rasters
+using RemoteSensingToolbox, Rasters
 
 # Prepare a Landsat 8 Image
 src = Landsat8("LC08_L2SP_043024_20200802_20200914_02_T1")

@@ -1,5 +1,5 @@
 using Test, Statistics, Random
-using RemoteSensingToolbox, Rasters, ArchGDAL
+using RemoteSensingToolbox, Rasters
 using Pipe: @pipe
 
 Random.seed!(123)

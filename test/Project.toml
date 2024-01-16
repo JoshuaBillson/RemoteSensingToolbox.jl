@@ -1,9 +1,6 @@
 [deps]
-ArchGDAL = "c9ce4bd3-c3d5-55b8-8973-c0e20141b8c3"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
-DataDeps = "124859b0-ceae-595e-8997-d05f6a7a8dfe"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
-Fetch = "bb354801-46f6-40b6-9c3d-d42d7a74c775"
 GeoDataFrames = "62cb38b5-d8d2-4862-a48e-6a340996859f"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Pipe = "b98c9c47-44ae-5843-9183-064241ee97a0"

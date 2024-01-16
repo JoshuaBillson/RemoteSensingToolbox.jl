@@ -75,7 +75,7 @@ to load multiple layers at once. By default, `RasterStack` will read all of the 
 specified. We can also set `lazy=true` to avoid reading everything into memory up-front.
 
 ```julia
-using RemoteSensingToolbox, Rasters, ArchGDAL
+using RemoteSensingToolbox, Rasters
 
 # Read Landsat Bands
 src = Landsat8("data/LC08_L2SP_043024_20200802_20200914_02_T1")
