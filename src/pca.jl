@@ -105,7 +105,7 @@ end
 
 """
     fit_pca(raster::Union{<:AbstractRasterStack, <:AbstractRaster}; method=:cov, stats_fraction=1.0)
-    fit_pca(signatures::Matrix{Float32}; method=:cov, stats_fraction=1.0)
+    fit_pca(signatures::Matrix; method=:cov, stats_fraction=1.0)
 
 Fit a Principal Component Analysis (PCA) transformation to the given raster or spectral signatures.
 

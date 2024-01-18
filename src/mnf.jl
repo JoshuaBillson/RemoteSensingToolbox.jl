@@ -158,16 +158,18 @@ function Base.show(io::IO, ::MIME"text/plain", x::MNF)
 end
 
 """
-    fit_mnf(raster, noise_sample; smooth=true)
+    fit_mnf(raster::Union{<:AbstractRasterStack, <:AbstractRaster}, noise_covariance::Matrix; stats_fraction=1.0)
+    fit_mnf(signatures::Matrix, noise_covariance::Matrix; stats_fraction=1.0)
 
 Fit a Minimum Noise Fraction (MNF) transformation to the given `AbstractRasterStack` or `AbstractRaster`.
 
 # Parameters
 - `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to fit the MNF transformation.
+- `signatures`: An n x b matrix of spectral signatures where n is the number of signatures and b is the number of bands.
 - `noise_sample`: A homogenous (spectrally uniform) region extracted from `raster` for calculating the noise covariance matrix.
 - `smooth`: The MNF transform cannot be computed if any band in `noise_sample` has zero variance. To correct this, you may wish to introduce a small smoothing term (true by default).
 """
-function fit_mnf(raster::RasterOrStack,  noise_covariance::Matrix; stats_fraction=1.0)
+function fit_mnf(raster::RasterOrStack, noise_covariance::Matrix; stats_fraction=1.0)
     signatures = sample(raster; fraction=stats_fraction) |> Tables.matrix .|> Float32
     return fit_mnf(signatures, noise_covariance; stats_fraction=1.0)
 end
@@ -205,14 +207,14 @@ end
 
 """
     forward_mnf(transformation::MNF, raster, components::Int)
-    forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
+    forward_mnf(transformation::MNF, signatures::Matrix, components::Int)
 
 Perform a forward Minimum Noise Fraction (MNF) rotation on the given raster or signatures, retaining only the specified number of components.
 
 # Parameters
 - `transformation`: A previously fitted MNF transformation.
 - `raster`: The `AbstractRaster` or `AbstractRasterStack` on which to perform the MNF transformation.
-- `sigs`: An n x b matrix of spectral signatures where n is the number of signatures and b is the number of bands.
+- `signatures`: An n x b matrix of spectral signatures where n is the number of signatures and b is the number of bands.
 - `components`: The number of bands to retain in the transformed image. All band numbers exceeding this value will be discarded.
 """
 function forward_mnf(transformation::MNF, raster::AbstractRasterStack, components::Int)
@@ -233,24 +235,24 @@ function forward_mnf(transformation::MNF, raster::AbstractRaster, components::In
     return mask!(transformed, with=bmask, missingval=Inf32)
 end
 
-function forward_mnf(transformation::MNF, sigs::Matrix, components::Int)
-    return forward_mnf(transformation, Float32.(sigs), components)
+function forward_mnf(transformation::MNF, signatures::Matrix, components::Int)
+    return forward_mnf(transformation, Float32.(signatures), components)
 end
 
-function forward_mnf(transformation::MNF, sigs::Matrix{Float32}, components::Int)
-    return sigs * projection(transformation)[:,1:components]
+function forward_mnf(transformation::MNF, signatures::Matrix{Float32}, components::Int)
+    return signatures * projection(transformation)[:,1:components]
 end
 
 """
     inverse_mnf(transformation::MNF, raster::AbstractRaster)
-    inverse_mnf(transformation::MNF, sigs::Matrix)
+    inverse_mnf(transformation::MNF, signatures::Matrix)
 
 Perform an inverse Minimum Noise Fraction (MNF) transformation to recover the original image or signatures.
 
 # Parameters
 - `transformation`: A previously fitted MNF transformation.
 - `raster`: An `AbstractRaster` representing a previously transformed image. The number of bands should be less than or equal to that of the original image.
-- `sigs`: An n x p matrix of transformed signatures where n is the number of signatures and p is the number of retained components.
+- `signatures`: An n x p matrix of transformed signatures where n is the number of signatures and p is the number of retained components.
 """
 function inverse_mnf(transformation::MNF, raster::AbstractRaster)
     # Check Arguments
@@ -270,18 +272,18 @@ function inverse_mnf(transformation::MNF, raster::AbstractRaster)
     return mask!(restored, with=bmask, missingval=Inf32)
 end
 
-function inverse_mnf(transformation::MNF, sigs::Matrix)
-    return inverse_mnf(transformation, Float32.(sigs))
+function inverse_mnf(transformation::MNF, signatures::Matrix)
+    return inverse_mnf(transformation, Float32.(signatures))
 end
 
-function inverse_mnf(transformation::MNF, sigs::Matrix{Float32})
+function inverse_mnf(transformation::MNF, signatures::Matrix{Float32})
     # Prepare Inverse Projection
-    components = size(sigs, 2)
+    components = size(signatures, 2)
     P = projection(transformation)
     D = LinearAlgebra.inv(P)[1:components,:]
 
     # Run Inverse Transformation
-    return sigs * D
+    return signatures * D
 end
 
 """

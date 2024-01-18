@@ -209,7 +209,7 @@ function apply_masks!(raster::RasterOrStack, masks...)
 end
 
 """
-function from_table(table, val_col, dim_col, dims; missingval=0)
+    from_table(table, val_col, dim_col, dims; missingval=0)
 
 Read a table into a `Raster` or `RasterStack`.
 
